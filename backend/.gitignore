@@ -4,6 +4,15 @@ target/
 !**/src/main/**/target/
 !**/src/test/**/target/
 
+### Local configuration and secrets ###
+.env
+.env.*
+!.env.example
+application-local.yaml
+application-local.yml
+*.log
+.DS_Store
+
 ### STS ###
 .apt_generated
 .classpath
