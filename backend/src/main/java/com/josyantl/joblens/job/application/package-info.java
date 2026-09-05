@@ -4,4 +4,4 @@
  * <p>This layer coordinates domain objects but does not contain web or
  * persistence implementation details.</p>
  */
-package com.josyantl.joblens.application;
+package com.josyantl.joblens.job.application;

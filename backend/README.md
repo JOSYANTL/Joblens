@@ -8,10 +8,12 @@ them, instead of creating empty controller, DTO, entity, and repository classes.
 
 ```text
 com.josyantl.joblens
-├── domain          # Business concepts and rules; no Spring or persistence code
-├── application     # Use cases and ports; coordinates the domain
-├── infrastructure  # Database, messaging, external APIs, and Spring configuration
-└── interfaces      # Inbound adapters such as REST controllers
+├── BackendApplication
+└── job
+    ├── domain          # Business concepts and rules; no Spring or persistence code
+    ├── application     # Use cases and ports; coordinates the domain
+    ├── infrastructure  # Database and other technical adapters
+    └── interfaces      # Inbound adapters such as REST controllers
 ```
 
 Dependencies point inward:
@@ -25,16 +27,8 @@ The domain layer must not depend on any other application layer. Application
 code defines interfaces (ports) for infrastructure concerns; infrastructure
 implements those interfaces.
 
-As business areas emerge, prefer a bounded-context package first, then these
-layers within it. For example:
-
-```text
-com.josyantl.joblens.job
-├── domain
-├── application
-├── infrastructure
-└── interfaces
-```
+Each new business area should follow the same bounded-context-first structure
+rather than adding another application-wide horizontal package.
 
 ## Run locally
 
