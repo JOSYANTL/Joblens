@@ -8,8 +8,6 @@ target/
 .env
 .env.*
 !.env.example
-application-local.yaml
-application-local.yml
 *.log
 .DS_Store
 

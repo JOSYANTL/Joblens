@@ -1,0 +1,15 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: joblens-postgres
+    environment:
+      POSTGRES_DB: joblens
+      POSTGRES_USER: joblens
+      POSTGRES_PASSWORD: joblens
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:
