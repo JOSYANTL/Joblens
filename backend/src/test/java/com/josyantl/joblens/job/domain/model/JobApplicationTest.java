@@ -1,0 +1,68 @@
+package com.josyantl.joblens.job.domain.model;
+
+import org.junit.jupiter.api.Test;
+
+import java.time.LocalDateTime;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
+class JobApplicationTest {
+
+    @Test
+    void createsSavedJobApplicationWithTimestamps() {
+        JobApplication application = JobApplication.create(
+                "Example Company",
+                "Backend Engineer",
+                "Java and Spring Boot"
+        );
+
+        assertNull(application.getId());
+        assertEquals("Example Company", application.getCompany());
+        assertEquals("Backend Engineer", application.getPosition());
+        assertEquals("Java and Spring Boot", application.getDescription());
+        assertEquals(ApplicationStatus.SAVED, application.getStatus());
+        assertNotNull(application.getCreatedAt());
+        assertNotNull(application.getUpdatedAt());
+        assertEquals(application.getCreatedAt(), application.getUpdatedAt());
+    }
+
+    @Test
+    void rejectsBlankRequiredFields() {
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> JobApplication.create(" ", "Backend Engineer", "Description")
+        );
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> JobApplication.create("Example Company", " ", "Description")
+        );
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> JobApplication.create("Example Company", "Backend Engineer", " ")
+        );
+    }
+
+    @Test
+    void restoresPersistedJobApplication() {
+        LocalDateTime createdAt = LocalDateTime.of(2026, 9, 8, 10, 0);
+        LocalDateTime updatedAt = LocalDateTime.of(2026, 9, 8, 11, 0);
+
+        JobApplication application = JobApplication.restore(
+                42L,
+                "Example Company",
+                "Backend Engineer",
+                "Java and Spring Boot",
+                ApplicationStatus.APPLIED,
+                createdAt,
+                updatedAt
+        );
+
+        assertEquals(42L, application.getId());
+        assertEquals(ApplicationStatus.APPLIED, application.getStatus());
+        assertEquals(createdAt, application.getCreatedAt());
+        assertEquals(updatedAt, application.getUpdatedAt());
+    }
+}
