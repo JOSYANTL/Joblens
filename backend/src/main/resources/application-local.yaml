@@ -1,0 +1,12 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/joblens
+    username: joblens
+    password: ${DB_PASSWORD:joblens}
+
+  jpa:
+      hibernate:
+          ddl-auto: validate
+
+  flyway:
+      enabled: true
