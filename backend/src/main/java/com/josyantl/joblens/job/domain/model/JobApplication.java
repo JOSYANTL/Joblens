@@ -57,6 +57,16 @@ public class JobApplication {
         );
     }
 
+    public void changeStatus(ApplicationStatus newStatus) {
+        ApplicationStatus validStatus = requireNonNull(newStatus, "Status");
+        if (status == validStatus) {
+            return;
+        }
+
+        status = validStatus;
+        updatedAt = LocalDateTime.now();
+    }
+
     private static String requireText(String value, String fieldName) {
         if (value == null || value.isBlank()) {
             throw new IllegalArgumentException(fieldName + " must not be blank");

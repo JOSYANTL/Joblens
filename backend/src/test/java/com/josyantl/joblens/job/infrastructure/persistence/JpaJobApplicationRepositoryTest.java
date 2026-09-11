@@ -54,4 +54,20 @@ class JpaJobApplicationRepositoryTest {
                 applications.stream().map(JobApplication::getCompany).collect(Collectors.toSet())
         );
     }
+
+    @Test
+    void findsJobApplicationById() {
+        JobApplication savedApplication = repository.save(JobApplication.create(
+                "Example Company",
+                "Backend Engineer",
+                "Java and Spring Boot"
+        ));
+
+        JobApplication foundApplication = repository.findById(savedApplication.getId())
+                .orElseThrow();
+
+        assertEquals(savedApplication.getId(), foundApplication.getId());
+        assertEquals("Example Company", foundApplication.getCompany());
+        assertEquals(ApplicationStatus.SAVED, foundApplication.getStatus());
+    }
 }

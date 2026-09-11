@@ -6,6 +6,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 @RequiredArgsConstructor
@@ -20,6 +21,12 @@ public class JpaJobApplicationRepository implements JobApplicationRepository {
                 mapper.toEntity(application)
         );
         return mapper.toDomain(savedEntity);
+    }
+
+    @Override
+    public Optional<JobApplication> findById(Long id) {
+        return springDataRepository.findById(id)
+                .map(mapper::toDomain);
     }
 
     @Override

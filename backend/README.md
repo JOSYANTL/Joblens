@@ -67,6 +67,17 @@ curl -X POST http://localhost:8080/api/applications \
 curl http://localhost:8080/api/applications
 ```
 
+Update a job application's status:
+
+```bash
+curl -X PATCH http://localhost:8080/api/applications/1/status \
+  -H "Content-Type: application/json" \
+  -d '{"status": "APPLIED"}'
+```
+
+Supported statuses are `SAVED`, `APPLIED`, `INTERVIEW_SCHEDULED`, `OFFERED`,
+and `REJECTED`.
+
 Run tests from the `backend` directory:
 
 ```bash
