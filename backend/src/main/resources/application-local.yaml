@@ -5,8 +5,8 @@ spring:
     password: ${DB_PASSWORD:joblens}
 
   jpa:
-      hibernate:
-          ddl-auto: validate
+    hibernate:
+      ddl-auto: validate
 
   flyway:
-      enabled: true
+    enabled: true

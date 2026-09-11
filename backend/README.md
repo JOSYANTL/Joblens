@@ -32,13 +32,42 @@ rather than adding another application-wide horizontal package.
 
 ## Run locally
 
-Prerequisites: Java 21 and a configured PostgreSQL database.
+Prerequisites: Java 21 and Docker Desktop.
+
+From the repository root, start PostgreSQL:
 
 ```bash
-./mvnw spring-boot:run
+docker compose -f backend/docker/docker-compose.yml up -d
 ```
 
-Run tests with:
+Then start the backend with the local profile:
+
+```bash
+cd backend
+DB_PASSWORD=joblens ./mvnw spring-boot:run -Dspring-boot.run.profiles=local
+```
+
+Check that the service and database are healthy:
+
+```bash
+curl http://localhost:8080/actuator/health
+```
+
+Create and list job applications:
+
+```bash
+curl -X POST http://localhost:8080/api/applications \
+  -H "Content-Type: application/json" \
+  -d '{
+    "company": "Example Company",
+    "position": "Backend Engineer",
+    "description": "Java Spring Boot PostgreSQL Docker"
+  }'
+
+curl http://localhost:8080/api/applications
+```
+
+Run tests from the `backend` directory:
 
 ```bash
 ./mvnw test

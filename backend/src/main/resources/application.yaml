@@ -2,11 +2,11 @@ spring:
   application:
     name: joblens
 
-    jpa:
-      open-in-view: false
+  jpa:
+    open-in-view: false
 
-  management:
-    endpoints:
-      web:
-        exposure:
-          include: health
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
