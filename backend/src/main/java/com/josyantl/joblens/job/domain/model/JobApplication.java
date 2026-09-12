@@ -67,6 +67,17 @@ public class JobApplication {
         updatedAt = LocalDateTime.now();
     }
 
+    public void updateDetails(String company, String position, String description) {
+        String validCompany = requireText(company, "Company", 150);
+        String validPosition = requireText(position, "Position", 150);
+        String validDescription = requireText(description, "Description");
+
+        this.company = validCompany;
+        this.position = validPosition;
+        this.description = validDescription;
+        updatedAt = LocalDateTime.now();
+    }
+
     private static String requireText(String value, String fieldName) {
         if (value == null || value.isBlank()) {
             throw new IllegalArgumentException(fieldName + " must not be blank");

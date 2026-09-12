@@ -12,4 +12,6 @@ public interface JobApplicationRepository {
     Optional<JobApplication> findById(Long id);
 
     List<JobApplication> findAll();
+
+    void deleteById(Long id);
 }

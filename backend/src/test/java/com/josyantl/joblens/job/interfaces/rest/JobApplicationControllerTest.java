@@ -13,9 +13,11 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.LocalDateTime;
 
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -135,6 +137,81 @@ class JobApplicationControllerTest {
                                 }
                                 """))
                 .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void findsJobApplicationById() throws Exception {
+        JobApplicationJpaEntity application = saveJobApplication();
+
+        mockMvc.perform(get("/api/applications/{id}", application.getId()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(application.getId()))
+                .andExpect(jsonPath("$.company").value("Example Company"))
+                .andExpect(jsonPath("$.position").value("Backend Engineer"));
+    }
+
+    @Test
+    void returnsNotFoundWhenGettingMissingJobApplication() throws Exception {
+        mockMvc.perform(get("/api/applications/{id}", 999999L))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.detail").value("Job application not found: 999999"));
+    }
+
+    @Test
+    void updatesJobApplicationDetailsWithoutChangingStatus() throws Exception {
+        JobApplicationJpaEntity application = saveJobApplication();
+
+        mockMvc.perform(put("/api/applications/{id}", application.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "company": "Updated Company",
+                                  "position": "Senior Backend Engineer",
+                                  "description": "Updated description"
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.company").value("Updated Company"))
+                .andExpect(jsonPath("$.position").value("Senior Backend Engineer"))
+                .andExpect(jsonPath("$.description").value("Updated description"))
+                .andExpect(jsonPath("$.status").value("SAVED"));
+
+        mockMvc.perform(get("/api/applications/{id}", application.getId()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.company").value("Updated Company"));
+    }
+
+    @Test
+    void rejectsInvalidUpdatedDetails() throws Exception {
+        JobApplicationJpaEntity application = saveJobApplication();
+
+        mockMvc.perform(put("/api/applications/{id}", application.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "company": "",
+                                  "position": "Backend Engineer",
+                                  "description": "Updated description"
+                                }
+                                """))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void deletesJobApplication() throws Exception {
+        JobApplicationJpaEntity application = saveJobApplication();
+
+        mockMvc.perform(delete("/api/applications/{id}", application.getId()))
+                .andExpect(status().isNoContent());
+
+        mockMvc.perform(get("/api/applications/{id}", application.getId()))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void returnsNotFoundWhenDeletingMissingJobApplication() throws Exception {
+        mockMvc.perform(delete("/api/applications/{id}", 999999L))
+                .andExpect(status().isNotFound());
     }
 
     private JobApplicationJpaEntity saveJobApplication() {

@@ -36,4 +36,9 @@ public class JpaJobApplicationRepository implements JobApplicationRepository {
                 .map(mapper::toDomain)
                 .toList();
     }
+
+    @Override
+    public void deleteById(Long id) {
+        springDataRepository.deleteById(id);
+    }
 }
