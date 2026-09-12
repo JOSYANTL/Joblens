@@ -1,12 +1,18 @@
 package com.josyantl.joblens.job.interfaces.rest;
 
 import com.josyantl.joblens.job.application.command.CreateJobApplicationCommand;
+import com.josyantl.joblens.job.application.command.UpdateJobApplicationCommand;
+import com.josyantl.joblens.job.application.command.UpdateJobApplicationStatusCommand;
 import com.josyantl.joblens.job.application.service.JobApplicationService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
@@ -40,5 +46,40 @@ public class JobApplicationController {
                 .stream()
                 .map(JobApplicationResponse::from)
                 .toList();
+    }
+
+    @GetMapping("/{id}")
+    public JobApplicationResponse findById(@PathVariable Long id) {
+        return JobApplicationResponse.from(service.findById(id));
+    }
+
+    @PutMapping("/{id}")
+    public JobApplicationResponse update(
+            @PathVariable Long id,
+            @Valid @RequestBody UpdateJobApplicationRequest request
+    ) {
+        UpdateJobApplicationCommand command = new UpdateJobApplicationCommand(
+                id,
+                request.company(),
+                request.position(),
+                request.description()
+        );
+        return JobApplicationResponse.from(service.update(command));
+    }
+
+    @PatchMapping("/{id}/status")
+    public JobApplicationResponse updateStatus(
+            @PathVariable Long id,
+            @Valid @RequestBody UpdateJobApplicationStatusRequest request
+    ) {
+        UpdateJobApplicationStatusCommand command =
+                new UpdateJobApplicationStatusCommand(id, request.status());
+        return JobApplicationResponse.from(service.updateStatus(command));
+    }
+
+    @DeleteMapping("/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void delete(@PathVariable Long id) {
+        service.delete(id);
     }
 }
