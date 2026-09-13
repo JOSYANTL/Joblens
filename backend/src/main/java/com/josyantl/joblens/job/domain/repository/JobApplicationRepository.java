@@ -13,5 +13,7 @@ public interface JobApplicationRepository {
 
     List<JobApplication> findAll();
 
+    JobApplicationPage search(JobApplicationSearchCriteria criteria);
+
     void deleteById(Long id);
 }
