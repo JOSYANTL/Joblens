@@ -52,6 +52,7 @@ class JobApplicationControllerTest {
                 .andExpect(jsonPath("$.company").value("Example Company"))
                 .andExpect(jsonPath("$.position").value("Backend Engineer"))
                 .andExpect(jsonPath("$.status").value("SAVED"))
+                .andExpect(jsonPath("$.version").value(0))
                 .andExpect(jsonPath("$.createdAt").exists())
                 .andExpect(jsonPath("$.updatedAt").exists());
     }
@@ -103,12 +104,14 @@ class JobApplicationControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
-                                  "status": "APPLIED"
+                                  "status": "APPLIED",
+                                  "version": 0
                                 }
                                 """))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(application.getId()))
-                .andExpect(jsonPath("$.status").value("APPLIED"));
+                .andExpect(jsonPath("$.status").value("APPLIED"))
+                .andExpect(jsonPath("$.version").value(1));
 
         mockMvc.perform(get("/api/applications"))
                 .andExpect(status().isOk())
@@ -121,7 +124,8 @@ class JobApplicationControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
-                                  "status": "APPLIED"
+                                  "status": "APPLIED",
+                                  "version": 0
                                 }
                                 """))
                 .andExpect(status().isNotFound())
@@ -137,7 +141,8 @@ class JobApplicationControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
-                                  "status": "UNKNOWN"
+                                  "status": "UNKNOWN",
+                                  "version": 0
                                 }
                                 """))
                 .andExpect(status().isBadRequest());
@@ -171,14 +176,16 @@ class JobApplicationControllerTest {
                                 {
                                   "company": "Updated Company",
                                   "position": "Senior Backend Engineer",
-                                  "description": "Updated description"
+                                  "description": "Updated description",
+                                  "version": 0
                                 }
                                 """))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.company").value("Updated Company"))
                 .andExpect(jsonPath("$.position").value("Senior Backend Engineer"))
                 .andExpect(jsonPath("$.description").value("Updated description"))
-                .andExpect(jsonPath("$.status").value("SAVED"));
+                .andExpect(jsonPath("$.status").value("SAVED"))
+                .andExpect(jsonPath("$.version").value(1));
 
         mockMvc.perform(get("/api/applications/{id}", application.getId()))
                 .andExpect(status().isOk())
@@ -195,7 +202,8 @@ class JobApplicationControllerTest {
                                 {
                                   "company": "",
                                   "position": "Backend Engineer",
-                                  "description": "Updated description"
+                                  "description": "Updated description",
+                                  "version": 0
                                 }
                                 """))
                 .andExpect(status().isBadRequest());
@@ -264,11 +272,11 @@ class JobApplicationControllerTest {
 
         mockMvc.perform(patch("/api/applications/{id}/status", id)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"status\":\"APPLIED\"}"))
+                        .content("{\"status\":\"APPLIED\",\"version\":0}"))
                 .andExpect(status().isOk());
         mockMvc.perform(patch("/api/applications/{id}/status", id)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"status\":\"APPLIED\"}"))
+                        .content("{\"status\":\"APPLIED\",\"version\":1}"))
                 .andExpect(status().isOk());
 
         mockMvc.perform(get("/api/applications/{id}/status-history", id))
@@ -297,7 +305,7 @@ class JobApplicationControllerTest {
 
         mockMvc.perform(patch("/api/applications/{id}/status", application.getId())
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"status\":\"OFFERED\"}"))
+                        .content("{\"status\":\"OFFERED\",\"version\":0}"))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.title")
                         .value("Invalid application status transition"))
@@ -323,6 +331,60 @@ class JobApplicationControllerTest {
                 .andExpect(jsonPath("$.byStatus.INTERVIEW_SCHEDULED").value(0))
                 .andExpect(jsonPath("$.byStatus.OFFERED").value(0))
                 .andExpect(jsonPath("$.byStatus.REJECTED").value(0));
+    }
+
+    @Test
+    void rejectsStaleVersionWithoutOverwritingCurrentData() throws Exception {
+        JobApplicationJpaEntity application = saveJobApplication();
+
+        mockMvc.perform(put("/api/applications/{id}", application.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "company": "First Update",
+                                  "position": "Backend Engineer",
+                                  "description": "Current data",
+                                  "version": 0
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.version").value(1));
+
+        mockMvc.perform(put("/api/applications/{id}", application.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "company": "Stale Update",
+                                  "position": "Backend Engineer",
+                                  "description": "Must not be saved",
+                                  "version": 0
+                                }
+                                """))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.title").value("Stale job application version"));
+
+        mockMvc.perform(get("/api/applications/{id}", application.getId()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.company").value("First Update"))
+                .andExpect(jsonPath("$.version").value(1));
+    }
+
+    @Test
+    void returnsFieldErrorsWhenVersionIsMissing() throws Exception {
+        JobApplicationJpaEntity application = saveJobApplication();
+
+        mockMvc.perform(put("/api/applications/{id}", application.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "company": "Updated Company",
+                                  "position": "Backend Engineer",
+                                  "description": "Updated description"
+                                }
+                                """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.title").value("Invalid request"))
+                .andExpect(jsonPath("$.errors.version").value("must not be null"));
     }
 
     private JobApplicationJpaEntity saveJobApplication() {

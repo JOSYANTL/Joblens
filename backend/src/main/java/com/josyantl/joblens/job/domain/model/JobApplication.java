@@ -17,6 +17,7 @@ public class JobApplication {
     private ApplicationStatus status;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+    private long version;
 
     public static JobApplication create(
             String company,
@@ -31,7 +32,8 @@ public class JobApplication {
                 requireText(description, "Description"),
                 ApplicationStatus.SAVED,
                 now,
-                now
+                now,
+                0L
         );
     }
 
@@ -42,7 +44,8 @@ public class JobApplication {
             String description,
             ApplicationStatus status,
             LocalDateTime createdAt,
-            LocalDateTime updatedAt
+            LocalDateTime updatedAt,
+            long version
     ) {
         if (id == null || id <= 0) {
             throw new IllegalArgumentException("Id must be positive");
@@ -55,7 +58,8 @@ public class JobApplication {
                 requireText(description, "Description"),
                 requireNonNull(status, "Status"),
                 requireNonNull(createdAt, "Created at"),
-                requireNonNull(updatedAt, "Updated at")
+                requireNonNull(updatedAt, "Updated at"),
+                requireNonNegative(version, "Version")
         );
     }
 
@@ -107,6 +111,13 @@ public class JobApplication {
     private static <T> T requireNonNull(T value, String fieldName) {
         if (value == null) {
             throw new IllegalArgumentException(fieldName + " must not be null");
+        }
+        return value;
+    }
+
+    private static long requireNonNegative(long value, String fieldName) {
+        if (value < 0) {
+            throw new IllegalArgumentException(fieldName + " must not be negative");
         }
         return value;
     }

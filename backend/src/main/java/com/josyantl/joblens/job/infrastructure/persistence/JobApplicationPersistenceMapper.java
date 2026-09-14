@@ -15,6 +15,7 @@ public class JobApplicationPersistenceMapper {
         entity.setStatus(application.getStatus());
         entity.setCreatedAt(application.getCreatedAt());
         entity.setUpdatedAt(application.getUpdatedAt());
+        entity.setVersion(application.getVersion());
         return entity;
     }
 
@@ -26,7 +27,8 @@ public class JobApplicationPersistenceMapper {
                 entity.getDescription(),
                 entity.getStatus(),
                 entity.getCreatedAt(),
-                entity.getUpdatedAt()
+                entity.getUpdatedAt(),
+                entity.getVersion()
         );
     }
 }

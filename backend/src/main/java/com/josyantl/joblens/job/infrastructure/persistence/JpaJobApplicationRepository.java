@@ -28,7 +28,7 @@ public class JpaJobApplicationRepository implements JobApplicationRepository {
 
     @Override
     public JobApplication save(JobApplication application) {
-        JobApplicationJpaEntity savedEntity = springDataRepository.save(
+        JobApplicationJpaEntity savedEntity = springDataRepository.saveAndFlush(
                 mapper.toEntity(application)
         );
         return mapper.toDomain(savedEntity);

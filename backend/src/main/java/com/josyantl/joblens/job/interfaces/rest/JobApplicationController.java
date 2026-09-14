@@ -100,7 +100,8 @@ public class JobApplicationController {
                 id,
                 request.company(),
                 request.position(),
-                request.description()
+                request.description(),
+                request.version()
         );
         return JobApplicationResponse.from(service.update(command));
     }
@@ -111,7 +112,7 @@ public class JobApplicationController {
             @Valid @RequestBody UpdateJobApplicationStatusRequest request
     ) {
         UpdateJobApplicationStatusCommand command =
-                new UpdateJobApplicationStatusCommand(id, request.status());
+                new UpdateJobApplicationStatusCommand(id, request.status(), request.version());
         return JobApplicationResponse.from(service.updateStatus(command));
     }
 

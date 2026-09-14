@@ -4,6 +4,7 @@ import com.josyantl.joblens.job.domain.model.ApplicationStatus;
 
 public record UpdateJobApplicationStatusCommand(
         Long id,
-        ApplicationStatus status
+        ApplicationStatus status,
+        Long version
 ) {
 }

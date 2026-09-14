@@ -59,13 +59,15 @@ class JobApplicationTest {
                 "Java and Spring Boot",
                 ApplicationStatus.APPLIED,
                 createdAt,
-                updatedAt
+                updatedAt,
+                3L
         );
 
         assertEquals(42L, application.getId());
         assertEquals(ApplicationStatus.APPLIED, application.getStatus());
         assertEquals(createdAt, application.getCreatedAt());
         assertEquals(updatedAt, application.getUpdatedAt());
+        assertEquals(3L, application.getVersion());
     }
 
     @Test
@@ -79,7 +81,8 @@ class JobApplicationTest {
                 "Java and Spring Boot",
                 ApplicationStatus.SAVED,
                 createdAt,
-                previousUpdatedAt
+                previousUpdatedAt,
+                0L
         );
 
         application.changeStatus(ApplicationStatus.APPLIED);
@@ -111,7 +114,8 @@ class JobApplicationTest {
                 "Old description",
                 ApplicationStatus.APPLIED,
                 createdAt,
-                previousUpdatedAt
+                previousUpdatedAt,
+                0L
         );
 
         application.updateDetails(
