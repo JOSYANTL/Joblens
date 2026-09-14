@@ -85,10 +85,14 @@ class JobApplicationControllerTest {
 
         mockMvc.perform(get("/api/applications"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.length()").value(1))
-                .andExpect(jsonPath("$[0].company").value("Example Company"))
-                .andExpect(jsonPath("$[0].position").value("Backend Engineer"))
-                .andExpect(jsonPath("$[0].status").value("SAVED"));
+                .andExpect(jsonPath("$.content.length()").value(1))
+                .andExpect(jsonPath("$.content[0].company").value("Example Company"))
+                .andExpect(jsonPath("$.content[0].position").value("Backend Engineer"))
+                .andExpect(jsonPath("$.content[0].status").value("SAVED"))
+                .andExpect(jsonPath("$.page").value(0))
+                .andExpect(jsonPath("$.size").value(20))
+                .andExpect(jsonPath("$.totalElements").value(1))
+                .andExpect(jsonPath("$.totalPages").value(1));
     }
 
     @Test
@@ -108,7 +112,7 @@ class JobApplicationControllerTest {
 
         mockMvc.perform(get("/api/applications"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].status").value("APPLIED"));
+                .andExpect(jsonPath("$.content[0].status").value("APPLIED"));
     }
 
     @Test
@@ -214,13 +218,87 @@ class JobApplicationControllerTest {
                 .andExpect(status().isNotFound());
     }
 
+    @Test
+    void filtersSearchesSortsAndPaginatesJobApplications() throws Exception {
+        saveJobApplication("Beta Labs", "Backend Engineer", ApplicationStatus.SAVED);
+        saveJobApplication("Alpha Systems", "Java Backend Developer", ApplicationStatus.SAVED);
+        saveJobApplication("Gamma Studio", "Designer", ApplicationStatus.APPLIED);
+
+        mockMvc.perform(get("/api/applications")
+                        .param("status", "SAVED")
+                        .param("keyword", "backend")
+                        .param("page", "0")
+                        .param("size", "1")
+                        .param("sortBy", "company")
+                        .param("direction", "asc"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content.length()").value(1))
+                .andExpect(jsonPath("$.content[0].company").value("Alpha Systems"))
+                .andExpect(jsonPath("$.totalElements").value(2))
+                .andExpect(jsonPath("$.totalPages").value(2));
+    }
+
+    @Test
+    void rejectsInvalidPaginationAndSorting() throws Exception {
+        mockMvc.perform(get("/api/applications").param("size", "101"))
+                .andExpect(status().isBadRequest());
+
+        mockMvc.perform(get("/api/applications").param("sortBy", "id"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.title").value("Invalid request"));
+    }
+
+    @Test
+    void recordsAndReturnsStatusHistory() throws Exception {
+        mockMvc.perform(post("/api/applications")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "company": "History Company",
+                                  "position": "Backend Engineer",
+                                  "description": "History verification"
+                                }
+                                """))
+                .andExpect(status().isCreated());
+        Long id = springDataRepository.findAll().getFirst().getId();
+
+        mockMvc.perform(patch("/api/applications/{id}/status", id)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"status\":\"APPLIED\"}"))
+                .andExpect(status().isOk());
+        mockMvc.perform(patch("/api/applications/{id}/status", id)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"status\":\"APPLIED\"}"))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(get("/api/applications/{id}/status-history", id))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(2))
+                .andExpect(jsonPath("$[0].fromStatus").doesNotExist())
+                .andExpect(jsonPath("$[0].toStatus").value("SAVED"))
+                .andExpect(jsonPath("$[1].fromStatus").value("SAVED"))
+                .andExpect(jsonPath("$[1].toStatus").value("APPLIED"));
+    }
+
     private JobApplicationJpaEntity saveJobApplication() {
+        return saveJobApplication(
+                "Example Company",
+                "Backend Engineer",
+                ApplicationStatus.SAVED
+        );
+    }
+
+    private JobApplicationJpaEntity saveJobApplication(
+            String company,
+            String position,
+            ApplicationStatus status
+    ) {
         LocalDateTime now = LocalDateTime.now();
         JobApplicationJpaEntity application = new JobApplicationJpaEntity();
-        application.setCompany("Example Company");
-        application.setPosition("Backend Engineer");
+        application.setCompany(company);
+        application.setPosition(position);
         application.setDescription("Java Spring Boot PostgreSQL");
-        application.setStatus(ApplicationStatus.SAVED);
+        application.setStatus(status);
         application.setCreatedAt(now);
         application.setUpdatedAt(now);
         return springDataRepository.save(application);

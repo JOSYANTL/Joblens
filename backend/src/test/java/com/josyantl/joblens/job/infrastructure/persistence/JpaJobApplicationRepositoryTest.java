@@ -3,6 +3,10 @@ package com.josyantl.joblens.job.infrastructure.persistence;
 import com.josyantl.joblens.job.domain.model.ApplicationStatus;
 import com.josyantl.joblens.job.domain.model.JobApplication;
 import com.josyantl.joblens.job.domain.repository.JobApplicationRepository;
+import com.josyantl.joblens.job.domain.repository.JobApplicationPage;
+import com.josyantl.joblens.job.domain.repository.JobApplicationSearchCriteria;
+import com.josyantl.joblens.job.domain.repository.JobApplicationSortField;
+import com.josyantl.joblens.job.domain.repository.SortDirection;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
@@ -83,5 +87,28 @@ class JpaJobApplicationRepositoryTest {
         repository.deleteById(savedApplication.getId());
 
         assertTrue(repository.findById(savedApplication.getId()).isEmpty());
+    }
+
+    @Test
+    void searchesWithCombinedCriteriaAndPagination() {
+        repository.save(JobApplication.create("Beta Labs", "Backend Engineer", "Java role"));
+        repository.save(JobApplication.create("Alpha Systems", "Java Developer", "Backend role"));
+        JobApplication rejected = JobApplication.create("Gamma", "Backend Engineer", "Java role");
+        rejected.changeStatus(ApplicationStatus.REJECTED);
+        repository.save(rejected);
+
+        JobApplicationPage result = repository.search(new JobApplicationSearchCriteria(
+                "java",
+                ApplicationStatus.SAVED,
+                0,
+                1,
+                JobApplicationSortField.COMPANY,
+                SortDirection.ASC
+        ));
+
+        assertEquals(1, result.content().size());
+        assertEquals("Alpha Systems", result.content().getFirst().getCompany());
+        assertEquals(2, result.totalElements());
+        assertEquals(2, result.totalPages());
     }
 }
