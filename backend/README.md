@@ -53,7 +53,7 @@ Check that the service and database are healthy:
 curl http://localhost:8080/actuator/health
 ```
 
-Create and list job applications:
+Create and search job applications:
 
 ```bash
 curl -X POST http://localhost:8080/api/applications \
@@ -64,8 +64,53 @@ curl -X POST http://localhost:8080/api/applications \
     "description": "Java Spring Boot PostgreSQL Docker"
   }'
 
-curl http://localhost:8080/api/applications
+curl "http://localhost:8080/api/applications?page=0&size=20"
 ```
+
+The list endpoint returns `content`, `page`, `size`, `totalElements`, and
+`totalPages`. It supports optional `keyword` and `status` filters. Results can
+be sorted by `updatedAt`, `createdAt`, `company`, or `position` in `asc` or
+`desc` direction:
+
+```bash
+curl "http://localhost:8080/api/applications?keyword=java&status=APPLIED&page=0&size=20&sortBy=updatedAt&direction=desc"
+```
+
+Retrieve, update, and delete one job application:
+
+```bash
+curl http://localhost:8080/api/applications/1
+
+curl -X PUT http://localhost:8080/api/applications/1 \
+  -H "Content-Type: application/json" \
+  -d '{
+    "company": "Updated Company",
+    "position": "Senior Backend Engineer",
+    "description": "Updated description"
+  }'
+
+curl -X DELETE http://localhost:8080/api/applications/1
+```
+
+Update a job application's status:
+
+```bash
+curl -X PATCH http://localhost:8080/api/applications/1/status \
+  -H "Content-Type: application/json" \
+  -d '{"status": "APPLIED"}'
+```
+
+Supported statuses are `SAVED`, `APPLIED`, `INTERVIEW_SCHEDULED`, `OFFERED`,
+and `REJECTED`.
+
+Read the complete status history for one application:
+
+```bash
+curl http://localhost:8080/api/applications/1/status-history
+```
+
+Creation is recorded as the initial `SAVED` history entry. Repeating the same
+status does not create a duplicate entry.
 
 Run tests from the `backend` directory:
 
