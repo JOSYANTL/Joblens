@@ -4,9 +4,11 @@ import com.josyantl.joblens.job.application.command.CreateJobApplicationCommand;
 import com.josyantl.joblens.job.application.command.UpdateJobApplicationCommand;
 import com.josyantl.joblens.job.application.command.UpdateJobApplicationStatusCommand;
 import com.josyantl.joblens.job.application.exception.JobApplicationNotFoundException;
-import com.josyantl.joblens.job.domain.model.JobApplication;
+import com.josyantl.joblens.job.application.exception.StaleJobApplicationVersionException;
 import com.josyantl.joblens.job.domain.model.ApplicationStatus;
+import com.josyantl.joblens.job.domain.model.JobApplication;
 import com.josyantl.joblens.job.domain.model.JobApplicationStatusHistory;
+import com.josyantl.joblens.job.domain.model.JobApplicationStatistics;
 import com.josyantl.joblens.job.domain.repository.JobApplicationRepository;
 import com.josyantl.joblens.job.domain.repository.JobApplicationPage;
 import com.josyantl.joblens.job.domain.repository.JobApplicationSearchCriteria;
@@ -55,9 +57,15 @@ public class JobApplicationService {
         return getById(id);
     }
 
+    @Transactional(readOnly = true)
+    public JobApplicationStatistics getStatistics() {
+        return new JobApplicationStatistics(repository.countByStatus());
+    }
+
     @Transactional
     public JobApplication update(UpdateJobApplicationCommand command) {
         JobApplication application = getById(command.id());
+        ensureCurrentVersion(application, command.version());
         application.updateDetails(
                 command.company(),
                 command.position(),
@@ -69,6 +77,7 @@ public class JobApplicationService {
     @Transactional
     public JobApplication updateStatus(UpdateJobApplicationStatusCommand command) {
         JobApplication application = getById(command.id());
+        ensureCurrentVersion(application, command.version());
         ApplicationStatus previousStatus = application.getStatus();
 
         application.changeStatus(command.status());
@@ -99,5 +108,15 @@ public class JobApplicationService {
     private JobApplication getById(Long id) {
         return repository.findById(id)
                 .orElseThrow(() -> new JobApplicationNotFoundException(id));
+    }
+
+    private void ensureCurrentVersion(JobApplication application, Long expectedVersion) {
+        if (expectedVersion == null || expectedVersion != application.getVersion()) {
+            throw new StaleJobApplicationVersionException(
+                    application.getId(),
+                    expectedVersion == null ? -1L : expectedVersion,
+                    application.getVersion()
+            );
+        }
     }
 }

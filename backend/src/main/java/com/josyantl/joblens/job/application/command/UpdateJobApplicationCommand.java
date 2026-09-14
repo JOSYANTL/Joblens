@@ -4,6 +4,7 @@ public record UpdateJobApplicationCommand(
         Long id,
         String company,
         String position,
-        String description
+        String description,
+        Long version
 ) {
 }

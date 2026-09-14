@@ -86,7 +86,8 @@ curl -X PUT http://localhost:8080/api/applications/1 \
   -d '{
     "company": "Updated Company",
     "position": "Senior Backend Engineer",
-    "description": "Updated description"
+    "description": "Updated description",
+    "version": 0
   }'
 
 curl -X DELETE http://localhost:8080/api/applications/1
@@ -97,11 +98,31 @@ Update a job application's status:
 ```bash
 curl -X PATCH http://localhost:8080/api/applications/1/status \
   -H "Content-Type: application/json" \
-  -d '{"status": "APPLIED"}'
+  -d '{"status": "APPLIED", "version": 0}'
 ```
+
+Every application response contains a `version`. Send the latest value back
+with each update or status change. A stale version returns `409 Conflict`
+instead of silently overwriting a newer change; reload the application before
+retrying.
 
 Supported statuses are `SAVED`, `APPLIED`, `INTERVIEW_SCHEDULED`, `OFFERED`,
 and `REJECTED`.
+
+Status changes follow this workflow:
+
+```text
+SAVED -> APPLIED
+APPLIED -> INTERVIEW_SCHEDULED | REJECTED
+INTERVIEW_SCHEDULED -> OFFERED | REJECTED
+```
+
+`OFFERED` and `REJECTED` are terminal statuses. An invalid transition returns
+`409 Conflict`. Read the currently available transitions with:
+
+```bash
+curl http://localhost:8080/api/applications/1/available-statuses
+```
 
 Read the complete status history for one application:
 
@@ -112,8 +133,26 @@ curl http://localhost:8080/api/applications/1/status-history
 Creation is recorded as the initial `SAVED` history entry. Repeating the same
 status does not create a duplicate entry.
 
+Read dashboard statistics calculated by the database:
+
+```bash
+curl http://localhost:8080/api/applications/statistics
+```
+
+The response includes the total number of applications and a count for every
+status, including statuses whose current count is zero.
+
 Run tests from the `backend` directory:
 
 ```bash
 ./mvnw test
 ```
+
+The test suite includes PostgreSQL integration tests powered by Testcontainers,
+so keep Docker Desktop running to exercise Flyway migrations, database search
+and statistics, and optimistic locking against a real PostgreSQL instance. If
+Docker is unavailable, those integration tests are skipped while the remaining
+tests still run.
+
+REST errors use the `application/problem+json` Problem Details format. Request
+validation errors include an `errors` object keyed by field name.
