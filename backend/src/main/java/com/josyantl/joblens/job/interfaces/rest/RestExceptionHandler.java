@@ -1,6 +1,7 @@
 package com.josyantl.joblens.job.interfaces.rest;
 
 import com.josyantl.joblens.job.application.exception.JobApplicationNotFoundException;
+import com.josyantl.joblens.job.domain.exception.InvalidApplicationStatusTransitionException;
 import jakarta.validation.ConstraintViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
@@ -37,6 +38,18 @@ public class RestExceptionHandler {
                 exception.getMessage()
         );
         problem.setTitle("Invalid request");
+        return problem;
+    }
+
+    @ExceptionHandler(InvalidApplicationStatusTransitionException.class)
+    public ProblemDetail handleStatusTransitionConflict(
+            InvalidApplicationStatusTransitionException exception
+    ) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(
+                HttpStatus.CONFLICT,
+                exception.getMessage()
+        );
+        problem.setTitle("Invalid application status transition");
         return problem;
     }
 }

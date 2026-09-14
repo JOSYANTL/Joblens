@@ -1,9 +1,11 @@
 package com.josyantl.joblens.job.domain.model;
 
+import com.josyantl.joblens.job.domain.exception.InvalidApplicationStatusTransitionException;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
 import java.time.LocalDateTime;
+import java.util.Set;
 
 @Getter
 @AllArgsConstructor(access = lombok.AccessLevel.PRIVATE)
@@ -62,9 +64,16 @@ public class JobApplication {
         if (status == validStatus) {
             return;
         }
+        if (!status.canTransitionTo(validStatus)) {
+            throw new InvalidApplicationStatusTransitionException(status, validStatus);
+        }
 
         status = validStatus;
         updatedAt = LocalDateTime.now();
+    }
+
+    public Set<ApplicationStatus> availableStatuses() {
+        return status.allowedTransitions();
     }
 
     public void updateDetails(String company, String position, String description) {

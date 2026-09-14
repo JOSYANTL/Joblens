@@ -1,5 +1,6 @@
 package com.josyantl.joblens.job.domain.model;
 
+import com.josyantl.joblens.job.domain.exception.InvalidApplicationStatusTransitionException;
 import org.junit.jupiter.api.Test;
 
 import java.time.LocalDateTime;
@@ -142,5 +143,64 @@ class JobApplicationTest {
         assertEquals("Example Company", application.getCompany());
         assertEquals("Backend Engineer", application.getPosition());
         assertEquals("Java and Spring Boot", application.getDescription());
+    }
+
+    @Test
+    void exposesAllowedStatusTransitions() {
+        JobApplication application = JobApplication.create(
+                "Example Company",
+                "Backend Engineer",
+                "Java and Spring Boot"
+        );
+
+        assertEquals(
+                java.util.Set.of(ApplicationStatus.APPLIED),
+                application.availableStatuses()
+        );
+
+        application.changeStatus(ApplicationStatus.APPLIED);
+
+        assertEquals(
+                java.util.Set.of(
+                        ApplicationStatus.INTERVIEW_SCHEDULED,
+                        ApplicationStatus.REJECTED
+                ),
+                application.availableStatuses()
+        );
+    }
+
+    @Test
+    void rejectsInvalidStatusTransitionWithoutChangingApplication() {
+        JobApplication application = JobApplication.create(
+                "Example Company",
+                "Backend Engineer",
+                "Java and Spring Boot"
+        );
+        LocalDateTime previousUpdatedAt = application.getUpdatedAt();
+
+        assertThrows(
+                InvalidApplicationStatusTransitionException.class,
+                () -> application.changeStatus(ApplicationStatus.OFFERED)
+        );
+        assertEquals(ApplicationStatus.SAVED, application.getStatus());
+        assertEquals(previousUpdatedAt, application.getUpdatedAt());
+    }
+
+    @Test
+    void terminalStatusesHaveNoAvailableTransitions() {
+        JobApplication application = JobApplication.create(
+                "Example Company",
+                "Backend Engineer",
+                "Java and Spring Boot"
+        );
+        application.changeStatus(ApplicationStatus.APPLIED);
+        application.changeStatus(ApplicationStatus.INTERVIEW_SCHEDULED);
+        application.changeStatus(ApplicationStatus.OFFERED);
+
+        assertTrue(application.availableStatuses().isEmpty());
+        assertThrows(
+                InvalidApplicationStatusTransitionException.class,
+                () -> application.changeStatus(ApplicationStatus.REJECTED)
+        );
     }
 }

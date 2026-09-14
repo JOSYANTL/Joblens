@@ -103,6 +103,21 @@ curl -X PATCH http://localhost:8080/api/applications/1/status \
 Supported statuses are `SAVED`, `APPLIED`, `INTERVIEW_SCHEDULED`, `OFFERED`,
 and `REJECTED`.
 
+Status changes follow this workflow:
+
+```text
+SAVED -> APPLIED
+APPLIED -> INTERVIEW_SCHEDULED | REJECTED
+INTERVIEW_SCHEDULED -> OFFERED | REJECTED
+```
+
+`OFFERED` and `REJECTED` are terminal statuses. An invalid transition returns
+`409 Conflict`. Read the currently available transitions with:
+
+```bash
+curl http://localhost:8080/api/applications/1/available-statuses
+```
+
 Read the complete status history for one application:
 
 ```bash
@@ -111,6 +126,15 @@ curl http://localhost:8080/api/applications/1/status-history
 
 Creation is recorded as the initial `SAVED` history entry. Repeating the same
 status does not create a duplicate entry.
+
+Read dashboard statistics calculated by the database:
+
+```bash
+curl http://localhost:8080/api/applications/statistics
+```
+
+The response includes the total number of applications and a count for every
+status, including statuses whose current count is zero.
 
 Run tests from the `backend` directory:
 

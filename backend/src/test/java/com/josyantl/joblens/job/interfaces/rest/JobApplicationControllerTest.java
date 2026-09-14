@@ -280,6 +280,51 @@ class JobApplicationControllerTest {
                 .andExpect(jsonPath("$[1].toStatus").value("APPLIED"));
     }
 
+    @Test
+    void returnsAvailableStatusTransitions() throws Exception {
+        JobApplicationJpaEntity application = saveJobApplication();
+
+        mockMvc.perform(get("/api/applications/{id}/available-statuses", application.getId()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.currentStatus").value("SAVED"))
+                .andExpect(jsonPath("$.availableStatuses.length()").value(1))
+                .andExpect(jsonPath("$.availableStatuses[0]").value("APPLIED"));
+    }
+
+    @Test
+    void returnsConflictForInvalidStatusTransition() throws Exception {
+        JobApplicationJpaEntity application = saveJobApplication();
+
+        mockMvc.perform(patch("/api/applications/{id}/status", application.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"status\":\"OFFERED\"}"))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.title")
+                        .value("Invalid application status transition"))
+                .andExpect(jsonPath("$.detail")
+                        .value("Cannot change application status from SAVED to OFFERED"));
+
+        mockMvc.perform(get("/api/applications/{id}", application.getId()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("SAVED"));
+    }
+
+    @Test
+    void returnsDashboardStatisticsIncludingZeroCounts() throws Exception {
+        saveJobApplication("Company A", "Engineer", ApplicationStatus.SAVED);
+        saveJobApplication("Company B", "Developer", ApplicationStatus.SAVED);
+        saveJobApplication("Company C", "Engineer", ApplicationStatus.APPLIED);
+
+        mockMvc.perform(get("/api/applications/statistics"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.total").value(3))
+                .andExpect(jsonPath("$.byStatus.SAVED").value(2))
+                .andExpect(jsonPath("$.byStatus.APPLIED").value(1))
+                .andExpect(jsonPath("$.byStatus.INTERVIEW_SCHEDULED").value(0))
+                .andExpect(jsonPath("$.byStatus.OFFERED").value(0))
+                .andExpect(jsonPath("$.byStatus.REJECTED").value(0));
+    }
+
     private JobApplicationJpaEntity saveJobApplication() {
         return saveJobApplication(
                 "Example Company",

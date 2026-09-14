@@ -94,6 +94,7 @@ class JpaJobApplicationRepositoryTest {
         repository.save(JobApplication.create("Beta Labs", "Backend Engineer", "Java role"));
         repository.save(JobApplication.create("Alpha Systems", "Java Developer", "Backend role"));
         JobApplication rejected = JobApplication.create("Gamma", "Backend Engineer", "Java role");
+        rejected.changeStatus(ApplicationStatus.APPLIED);
         rejected.changeStatus(ApplicationStatus.REJECTED);
         repository.save(rejected);
 
@@ -110,5 +111,19 @@ class JpaJobApplicationRepositoryTest {
         assertEquals("Alpha Systems", result.content().getFirst().getCompany());
         assertEquals(2, result.totalElements());
         assertEquals(2, result.totalPages());
+    }
+
+    @Test
+    void countsJobApplicationsGroupedByStatus() {
+        repository.save(JobApplication.create("Company A", "Engineer", "First role"));
+        repository.save(JobApplication.create("Company B", "Developer", "Second role"));
+        JobApplication applied = JobApplication.create("Company C", "Engineer", "Third role");
+        applied.changeStatus(ApplicationStatus.APPLIED);
+        repository.save(applied);
+
+        var counts = repository.countByStatus();
+
+        assertEquals(2L, counts.get(ApplicationStatus.SAVED));
+        assertEquals(1L, counts.get(ApplicationStatus.APPLIED));
     }
 }

@@ -1,5 +1,6 @@
 package com.josyantl.joblens.job.infrastructure.persistence;
 
+import com.josyantl.joblens.job.domain.model.ApplicationStatus;
 import com.josyantl.joblens.job.domain.model.JobApplication;
 import com.josyantl.joblens.job.domain.repository.JobApplicationRepository;
 import com.josyantl.joblens.job.domain.repository.JobApplicationPage;
@@ -12,8 +13,10 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Repository;
 
+import java.util.EnumMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Optional;
 
 @Repository
@@ -69,6 +72,14 @@ public class JpaJobApplicationRepository implements JobApplicationRepository {
                 result.getTotalElements(),
                 result.getTotalPages()
         );
+    }
+
+    @Override
+    public Map<ApplicationStatus, Long> countByStatus() {
+        EnumMap<ApplicationStatus, Long> counts = new EnumMap<>(ApplicationStatus.class);
+        springDataRepository.countGroupedByStatus()
+                .forEach(row -> counts.put(row.getStatus(), row.getCount()));
+        return counts;
     }
 
     private Specification<JobApplicationJpaEntity> buildSpecification(

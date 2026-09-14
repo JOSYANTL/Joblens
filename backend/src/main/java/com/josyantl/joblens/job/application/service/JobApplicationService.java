@@ -4,9 +4,10 @@ import com.josyantl.joblens.job.application.command.CreateJobApplicationCommand;
 import com.josyantl.joblens.job.application.command.UpdateJobApplicationCommand;
 import com.josyantl.joblens.job.application.command.UpdateJobApplicationStatusCommand;
 import com.josyantl.joblens.job.application.exception.JobApplicationNotFoundException;
-import com.josyantl.joblens.job.domain.model.JobApplication;
 import com.josyantl.joblens.job.domain.model.ApplicationStatus;
+import com.josyantl.joblens.job.domain.model.JobApplication;
 import com.josyantl.joblens.job.domain.model.JobApplicationStatusHistory;
+import com.josyantl.joblens.job.domain.model.JobApplicationStatistics;
 import com.josyantl.joblens.job.domain.repository.JobApplicationRepository;
 import com.josyantl.joblens.job.domain.repository.JobApplicationPage;
 import com.josyantl.joblens.job.domain.repository.JobApplicationSearchCriteria;
@@ -53,6 +54,11 @@ public class JobApplicationService {
     @Transactional(readOnly = true)
     public JobApplication findById(Long id) {
         return getById(id);
+    }
+
+    @Transactional(readOnly = true)
+    public JobApplicationStatistics getStatistics() {
+        return new JobApplicationStatistics(repository.countByStatus());
     }
 
     @Transactional

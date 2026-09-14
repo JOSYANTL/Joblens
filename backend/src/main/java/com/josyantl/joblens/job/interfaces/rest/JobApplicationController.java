@@ -5,6 +5,7 @@ import com.josyantl.joblens.job.application.command.UpdateJobApplicationCommand;
 import com.josyantl.joblens.job.application.command.UpdateJobApplicationStatusCommand;
 import com.josyantl.joblens.job.application.service.JobApplicationService;
 import com.josyantl.joblens.job.domain.model.ApplicationStatus;
+import com.josyantl.joblens.job.domain.model.JobApplication;
 import com.josyantl.joblens.job.domain.repository.JobApplicationSearchCriteria;
 import com.josyantl.joblens.job.domain.repository.JobApplicationSortField;
 import com.josyantl.joblens.job.domain.repository.SortDirection;
@@ -72,6 +73,22 @@ public class JobApplicationController {
     @GetMapping("/{id}")
     public JobApplicationResponse findById(@PathVariable Long id) {
         return JobApplicationResponse.from(service.findById(id));
+    }
+
+    @GetMapping("/{id}/available-statuses")
+    public AvailableApplicationStatusesResponse findAvailableStatuses(
+            @PathVariable Long id
+    ) {
+        JobApplication application = service.findById(id);
+        return new AvailableApplicationStatusesResponse(
+                application.getStatus(),
+                application.availableStatuses()
+        );
+    }
+
+    @GetMapping("/statistics")
+    public JobApplicationStatisticsResponse getStatistics() {
+        return JobApplicationStatisticsResponse.from(service.getStatistics());
     }
 
     @PutMapping("/{id}")
