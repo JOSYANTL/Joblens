@@ -2,7 +2,7 @@
 
 Jira：JOBL-15 — Implement interview scheduling and feedback management
 
-当前已完成该分支的第一阶段：职位申请跟进任务管理。面试安排与反馈属于后续阶段，尚未实现。
+本文记录该分支的第一阶段：职位申请跟进任务管理。第二阶段已完成，见 [面试安排与反馈交接](interview-management-handoff.md)。
 
 分支：`JOBL-15-implement-interview-scheduling-and-feedback-management`
 

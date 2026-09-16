@@ -1,6 +1,9 @@
 package com.josyantl.joblens.job.interfaces.rest;
 
 import com.josyantl.joblens.job.application.exception.JobApplicationNotFoundException;
+import com.josyantl.joblens.job.application.exception.InterviewNotFoundException;
+import com.josyantl.joblens.job.application.exception.StaleInterviewVersionException;
+import com.josyantl.joblens.job.domain.exception.InterviewStateException;
 import com.josyantl.joblens.job.application.exception.FollowUpTaskNotFoundException;
 import com.josyantl.joblens.job.application.exception.FollowUpTaskConflictException;
 import com.josyantl.joblens.job.application.exception.StaleJobApplicationVersionException;
@@ -20,6 +23,23 @@ import java.util.Map;
 
 @RestControllerAdvice
 public class RestExceptionHandler {
+
+    @ExceptionHandler(InterviewNotFoundException.class)
+    public ProblemDetail handleInterviewNotFound(InterviewNotFoundException exception) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, exception.getMessage());
+        problem.setTitle("Interview not found");
+        return problem;
+    }
+
+    @ExceptionHandler(StaleInterviewVersionException.class)
+    public ProblemDetail handleInterviewVersion(StaleInterviewVersionException exception) {
+        return conflictProblem("Stale interview version", exception.getMessage());
+    }
+
+    @ExceptionHandler(InterviewStateException.class)
+    public ProblemDetail handleInterviewState(InterviewStateException exception) {
+        return conflictProblem("Invalid interview operation", exception.getMessage());
+    }
 
     @ExceptionHandler(FollowUpTaskNotFoundException.class)
     public ProblemDetail handleTaskNotFound(FollowUpTaskNotFoundException exception) {
