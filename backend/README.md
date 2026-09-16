@@ -1,5 +1,7 @@
 # Joblens Backend
 
+CI configuration and local reproduction steps: [Backend CI](../docs/backend-ci.md).
+
 Spring Boot backend organized around Domain-Driven Design (DDD). The initial
 structure is deliberately small: packages are added only when the domain needs
 them, instead of creating empty controller, DTO, entity, and repository classes.
