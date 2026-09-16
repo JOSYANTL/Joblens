@@ -156,3 +156,62 @@ tests still run.
 
 REST errors use the `application/problem+json` Problem Details format. Request
 validation errors include an `errors` object keyed by field name.
+
+## Follow-up tasks
+
+Applications can have multiple follow-up tasks (for example, email a recruiter
+or prepare for an interview). Tasks have their own lifecycle and version:
+`TODO`, `DONE`, and `CANCELLED`. Any status can be changed to another; setting
+`TODO` reopens a task. Completing sets `completedAt`; reopening or cancelling
+clears it. Repeating the same status leaves the timestamp and version unchanged.
+These tasks do not change the application's recruitment status.
+
+Create a task using an existing application id:
+
+```bash
+curl -X POST http://localhost:8080/api/applications/1/tasks \
+  -H "Content-Type: application/json" \
+  -d '{"title":"Email recruiter","notes":"Ask about next round","dueAt":"2030-01-02T09:00:00+08:00"}'
+```
+
+Use the returned task id in the following routes:
+
+| Method | Route | Purpose |
+| --- | --- | --- |
+| POST | /api/applications/{applicationId}/tasks | Create task |
+| GET | /api/applications/{applicationId}/tasks/{taskId} | Task details |
+| PUT | /api/applications/{applicationId}/tasks/{taskId} | Edit title, notes, deadline |
+| PATCH | /api/applications/{applicationId}/tasks/{taskId}/status | Complete, cancel, reopen |
+| DELETE | /api/applications/{applicationId}/tasks/{taskId}?version=0 | Delete with version check |
+| GET | /api/tasks | Paginated cross-application task list |
+
+PUT requires `title`, `dueAt`, and the latest task `version`; omitted `notes`
+becomes an empty string. PATCH accepts, for example, `{"status":"DONE","version":0}`.
+Task versions are independent of application versions. Stale edits, status changes,
+and deletes return 409; task ids belonging to a different application return 404.
+Deleting an application also deletes its tasks.
+
+```bash
+# Pending tasks for one application
+curl "http://localhost:8080/api/tasks?applicationId=1&status=TODO"
+# All overdue pending tasks, earliest deadline first
+curl "http://localhost:8080/api/tasks?overdueOnly=true&page=0&size=20"
+# A day's pending tasks (UTC example)
+curl "http://localhost:8080/api/tasks?status=TODO&dueFrom=2030-01-02T00:00:00Z&dueTo=2030-01-03T00:00:00Z"
+```
+
+Filters can be combined: `applicationId`, `status`, `dueFrom` (inclusive),
+`dueTo` (exclusive), and `overdueOnly`. Page starts at 0; size is 1–100.
+Sorting is by deadline then id, both ascending. Overdue means a TODO task whose
+deadline is strictly before the current instant; DONE and CANCELLED never count.
+`overdueOnly=true` combined with a non-TODO status is rejected.
+
+Supply timestamps with a UTC offset or Z. Responses use UTC, and deadlines are
+stored with time-zone support. Past deadlines are allowed for importing overdue
+work. Encode the plus sign as `%2B` when putting a positive offset in a query URL.
+V5 creates the task table and indexes automatically on startup. This feature
+provides task tracking and queries, not background email or push reminders.
+
+The project is still a local, single-user backend without authentication; checking
+the parent application id prevents accidental cross-application edits but does
+not implement user authorization.

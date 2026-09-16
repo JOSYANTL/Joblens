@@ -2,6 +2,10 @@ package com.josyantl.joblens.job.infrastructure.persistence;
 
 import com.josyantl.joblens.job.domain.model.ApplicationStatus;
 import com.josyantl.joblens.job.domain.model.JobApplication;
+import com.josyantl.joblens.job.domain.model.FollowUpTask;
+import com.josyantl.joblens.job.domain.model.FollowUpTaskStatus;
+import com.josyantl.joblens.job.domain.repository.FollowUpTaskRepository;
+import com.josyantl.joblens.job.domain.repository.FollowUpTaskQuery;
 import com.josyantl.joblens.job.domain.repository.JobApplicationPage;
 import com.josyantl.joblens.job.domain.repository.JobApplicationRepository;
 import com.josyantl.joblens.job.domain.repository.JobApplicationSearchCriteria;
@@ -21,6 +25,8 @@ import org.testcontainers.postgresql.PostgreSQLContainer;
 import org.testcontainers.utility.DockerImageName;
 
 import java.util.Map;
+import java.time.Instant;
+import java.time.OffsetDateTime;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -52,6 +58,47 @@ class PostgreSqlJobApplicationIntegrationTest {
     @Autowired
     private JdbcTemplate jdbcTemplate;
 
+    @Autowired
+    private FollowUpTaskRepository tasks;
+
+    @Test
+    void taskMigrationSupportsTimezonesOptimisticLockingAndCascadeDelete() {
+        var application = repository.save(JobApplication.create("Acme", "Engineer", "Java"));
+        var due = OffsetDateTime.parse("2030-01-01T18:00:00+08:00").toInstant();
+        var saved = tasks.save(FollowUpTask.create(
+                application.getId(), "Follow up", "", due, Instant.now()));
+        var first = tasks.findById(saved.getId()).orElseThrow();
+        var stale = tasks.findById(saved.getId()).orElseThrow();
+        assertThat(first.getDueAt()).isEqualTo(Instant.parse("2030-01-01T10:00:00Z"));
+        first.changeStatus(FollowUpTaskStatus.DONE, Instant.now());
+        assertThat(tasks.save(first).getVersion()).isEqualTo(1);
+        stale.update("Stale title", "", due, Instant.now());
+        assertThatThrownBy(() -> tasks.save(stale))
+                .isInstanceOf(OptimisticLockingFailureException.class);
+        assertThatThrownBy(() -> tasks.delete(stale))
+                .isInstanceOf(OptimisticLockingFailureException.class);
+        repository.deleteById(application.getId());
+        assertThat(tasks.findById(saved.getId())).isEmpty();
+    }
+
+    @Test
+    void taskOverdueSearchUsesPostgresAndExcludesCompletedTasks() {
+        var application = repository.save(JobApplication.create("Acme", "Engineer", "Java"));
+        var now = Instant.parse("2030-01-01T00:00:00Z");
+        tasks.save(FollowUpTask.create(
+                application.getId(), "Overdue", "", now.minusSeconds(1), now));
+        var completed = FollowUpTask.create(
+                application.getId(), "Completed", "", now.minusSeconds(1), now);
+        completed.changeStatus(FollowUpTaskStatus.DONE, now);
+        tasks.save(completed);
+        tasks.save(FollowUpTask.create(
+                application.getId(), "Boundary", "", now, now));
+        var result = tasks.search(new FollowUpTaskQuery(
+                application.getId(), null, null, null, true, 0, 20), now);
+        assertThat(result.totalElements()).isEqualTo(1);
+        assertThat(result.content().getFirst().getTitle()).isEqualTo("Overdue");
+    }
+
     @BeforeEach
     void cleanDatabase() {
         historyRepository.deleteAll();
@@ -73,7 +120,7 @@ class PostgreSqlJobApplicationIntegrationTest {
                 Integer.class
         );
 
-        assertThat(latestVersion).isEqualTo("4");
+        assertThat(latestVersion).isEqualTo("5");
         assertThat(versionColumnCount).isEqualTo(1);
     }
 

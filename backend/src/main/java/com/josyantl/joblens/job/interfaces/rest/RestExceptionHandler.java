@@ -1,6 +1,8 @@
 package com.josyantl.joblens.job.interfaces.rest;
 
 import com.josyantl.joblens.job.application.exception.JobApplicationNotFoundException;
+import com.josyantl.joblens.job.application.exception.FollowUpTaskNotFoundException;
+import com.josyantl.joblens.job.application.exception.FollowUpTaskConflictException;
 import com.josyantl.joblens.job.application.exception.StaleJobApplicationVersionException;
 import com.josyantl.joblens.job.domain.exception.InvalidApplicationStatusTransitionException;
 import jakarta.validation.ConstraintViolationException;
@@ -18,6 +20,18 @@ import java.util.Map;
 
 @RestControllerAdvice
 public class RestExceptionHandler {
+
+    @ExceptionHandler(FollowUpTaskNotFoundException.class)
+    public ProblemDetail handleTaskNotFound(FollowUpTaskNotFoundException exception) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, exception.getMessage());
+        problem.setTitle("Follow-up task not found");
+        return problem;
+    }
+
+    @ExceptionHandler(FollowUpTaskConflictException.class)
+    public ProblemDetail handleTaskConflict(FollowUpTaskConflictException exception) {
+        return conflictProblem("Stale follow-up task version", exception.getMessage());
+    }
 
     @ExceptionHandler(JobApplicationNotFoundException.class)
     public ProblemDetail handleNotFound(JobApplicationNotFoundException exception) {
@@ -71,8 +85,8 @@ public class RestExceptionHandler {
             OptimisticLockingFailureException exception
     ) {
         return conflictProblem(
-                "Concurrent job application update",
-                "The application was modified by another request; reload it and try again"
+                "Concurrent update",
+                "The record was modified by another request; reload it and try again"
         );
     }
 
