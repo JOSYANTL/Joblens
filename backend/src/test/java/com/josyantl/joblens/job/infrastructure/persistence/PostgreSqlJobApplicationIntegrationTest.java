@@ -2,6 +2,17 @@ package com.josyantl.joblens.job.infrastructure.persistence;
 
 import com.josyantl.joblens.job.domain.model.ApplicationStatus;
 import com.josyantl.joblens.job.domain.model.JobApplication;
+import com.josyantl.joblens.job.domain.model.Interview;
+import com.josyantl.joblens.job.domain.model.InterviewDetails;
+import com.josyantl.joblens.job.domain.model.InterviewFeedback;
+import com.josyantl.joblens.job.domain.model.InterviewStatus;
+import com.josyantl.joblens.job.domain.model.InterviewType;
+import com.josyantl.joblens.job.domain.repository.InterviewRepository;
+import com.josyantl.joblens.job.domain.repository.InterviewQuery;
+import com.josyantl.joblens.job.domain.model.FollowUpTask;
+import com.josyantl.joblens.job.domain.model.FollowUpTaskStatus;
+import com.josyantl.joblens.job.domain.repository.FollowUpTaskRepository;
+import com.josyantl.joblens.job.domain.repository.FollowUpTaskQuery;
 import com.josyantl.joblens.job.domain.repository.JobApplicationPage;
 import com.josyantl.joblens.job.domain.repository.JobApplicationRepository;
 import com.josyantl.joblens.job.domain.repository.JobApplicationSearchCriteria;
@@ -21,6 +32,8 @@ import org.testcontainers.postgresql.PostgreSQLContainer;
 import org.testcontainers.utility.DockerImageName;
 
 import java.util.Map;
+import java.time.Instant;
+import java.time.OffsetDateTime;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -52,6 +65,90 @@ class PostgreSqlJobApplicationIntegrationTest {
     @Autowired
     private JdbcTemplate jdbcTemplate;
 
+    @Autowired
+    private InterviewRepository interviews;
+
+    @Test
+    void interviewsPersistFeedbackAndRejectConcurrentChangesInPostgres() {
+        var application = repository.save(JobApplication.create("Acme", "Engineer", "Java"));
+        var start = OffsetDateTime.parse("2020-01-01T18:00:00+08:00").toInstant();
+        var details = new InterviewDetails(1, InterviewType.VIDEO, start, 60, "Recruiter",
+                "https://example.com/meeting", "");
+        var saved = interviews.save(Interview.schedule(application.getId(), details, Instant.now()));
+        var first = interviews.findById(saved.getId()).orElseThrow();
+        var stale = interviews.findById(saved.getId()).orElseThrow();
+        assertThat(first.getDetails().startsAt()).isEqualTo(Instant.parse("2020-01-01T10:00:00Z"));
+        first.changeStatus(InterviewStatus.COMPLETED, Instant.now());
+        first.recordFeedback(new InterviewFeedback("JPA?", "Good", "Follow up"), Instant.now());
+        assertThat(interviews.save(first).getVersion()).isEqualTo(1);
+        stale.changeStatus(InterviewStatus.CANCELLED, Instant.now());
+        assertThatThrownBy(() -> interviews.save(stale))
+                .isInstanceOf(OptimisticLockingFailureException.class);
+        assertThat(interviews.findById(saved.getId()).orElseThrow().getFeedback().summary()).isEqualTo("Good");
+        repository.deleteById(application.getId());
+        assertThat(interviews.findById(saved.getId())).isEmpty();
+    }
+
+    @Test
+    void interviewCalendarFiltersAndPaginatesOnPostgres() {
+        var application = repository.save(JobApplication.create("Acme", "Engineer", "Java"));
+        var start = Instant.parse("2030-01-01T00:00:00Z");
+        var details = new InterviewDetails(1, InterviewType.PHONE, start, 30, "", "", "");
+        var first = interviews.save(Interview.schedule(application.getId(), details, Instant.now()));
+        interviews.save(Interview.schedule(application.getId(), details, Instant.now()));
+        var cancelled = Interview.schedule(application.getId(), details, Instant.now());
+        cancelled.changeStatus(InterviewStatus.CANCELLED, Instant.now());
+        interviews.save(cancelled);
+        interviews.save(Interview.schedule(application.getId(),
+                new InterviewDetails(2, InterviewType.PHONE, start.plusSeconds(86400), 30, "", "", ""), Instant.now()));
+        var page = interviews.search(new InterviewQuery(application.getId(), InterviewStatus.SCHEDULED,
+                start, start.plusSeconds(86400), 0, 1));
+        assertThat(page.totalElements()).isEqualTo(2);
+        assertThat(page.totalPages()).isEqualTo(2);
+        assertThat(page.content().getFirst().getId()).isEqualTo(first.getId());
+    }
+
+    @Autowired
+    private FollowUpTaskRepository tasks;
+
+    @Test
+    void taskMigrationSupportsTimezonesOptimisticLockingAndCascadeDelete() {
+        var application = repository.save(JobApplication.create("Acme", "Engineer", "Java"));
+        var due = OffsetDateTime.parse("2030-01-01T18:00:00+08:00").toInstant();
+        var saved = tasks.save(FollowUpTask.create(
+                application.getId(), "Follow up", "", due, Instant.now()));
+        var first = tasks.findById(saved.getId()).orElseThrow();
+        var stale = tasks.findById(saved.getId()).orElseThrow();
+        assertThat(first.getDueAt()).isEqualTo(Instant.parse("2030-01-01T10:00:00Z"));
+        first.changeStatus(FollowUpTaskStatus.DONE, Instant.now());
+        assertThat(tasks.save(first).getVersion()).isEqualTo(1);
+        stale.update("Stale title", "", due, Instant.now());
+        assertThatThrownBy(() -> tasks.save(stale))
+                .isInstanceOf(OptimisticLockingFailureException.class);
+        assertThatThrownBy(() -> tasks.delete(stale))
+                .isInstanceOf(OptimisticLockingFailureException.class);
+        repository.deleteById(application.getId());
+        assertThat(tasks.findById(saved.getId())).isEmpty();
+    }
+
+    @Test
+    void taskOverdueSearchUsesPostgresAndExcludesCompletedTasks() {
+        var application = repository.save(JobApplication.create("Acme", "Engineer", "Java"));
+        var now = Instant.parse("2030-01-01T00:00:00Z");
+        tasks.save(FollowUpTask.create(
+                application.getId(), "Overdue", "", now.minusSeconds(1), now));
+        var completed = FollowUpTask.create(
+                application.getId(), "Completed", "", now.minusSeconds(1), now);
+        completed.changeStatus(FollowUpTaskStatus.DONE, now);
+        tasks.save(completed);
+        tasks.save(FollowUpTask.create(
+                application.getId(), "Boundary", "", now, now));
+        var result = tasks.search(new FollowUpTaskQuery(
+                application.getId(), null, null, null, true, 0, 20), now);
+        assertThat(result.totalElements()).isEqualTo(1);
+        assertThat(result.content().getFirst().getTitle()).isEqualTo("Overdue");
+    }
+
     @BeforeEach
     void cleanDatabase() {
         historyRepository.deleteAll();
@@ -73,7 +170,7 @@ class PostgreSqlJobApplicationIntegrationTest {
                 Integer.class
         );
 
-        assertThat(latestVersion).isEqualTo("4");
+        assertThat(latestVersion).isEqualTo("6");
         assertThat(versionColumnCount).isEqualTo(1);
     }
 
