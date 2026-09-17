@@ -4,12 +4,12 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { ApiError } from '../../shared/api/client';
-import type { JobApplication } from '../../shared/api/types';
-import { applicationApi } from './api';
-import { EditApplicationPage } from './EditApplicationPage';
+import { ApiError } from '../../src/shared/api/client';
+import type { JobApplication } from '../../src/shared/api/types';
+import { applicationApi } from '../../src/features/applications/api';
+import { EditApplicationPage } from '../../src/features/applications/EditApplicationPage';
 
-vi.mock('./api', () => ({ applicationApi: { get: vi.fn(), update: vi.fn() } }));
+vi.mock('../../src/features/applications/api', () => ({ applicationApi: { get: vi.fn(), update: vi.fn() } }));
 
 const original: JobApplication = {
   id: 7, company: 'Original Company', position: 'Engineer', description: 'Java',

@@ -2,7 +2,7 @@ import { MantineProvider } from '@mantine/core';
 import { fireEvent, render, screen } from '@testing-library/react';
 import { useState } from 'react';
 import { describe, expect, it, vi } from 'vitest';
-import { DeleteApplicationDialog } from './DeleteApplicationDialog';
+import { DeleteApplicationDialog } from '../../src/features/applications/DeleteApplicationDialog';
 
 vi.mock('@mantine/core', async (importOriginal) => {
   const original = await importOriginal<typeof import('@mantine/core')>();

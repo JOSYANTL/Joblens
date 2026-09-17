@@ -9,6 +9,9 @@ const CreateApplicationPage = lazy(() => import('../features/applications/Create
 const EditApplicationPage = lazy(() => import('../features/applications/EditApplicationPage').then((module) => ({ default: module.EditApplicationPage })));
 const ApplicationDetailPage = lazy(() => import('../features/applications/ApplicationDetailPage').then((module) => ({ default: module.ApplicationDetailPage })));
 const InterviewsPage = lazy(() => import('../features/interviews/InterviewsPage').then((module) => ({ default: module.InterviewsPage })));
+const ScheduleInterviewPage = lazy(() => import('../features/interviews/ScheduleInterviewPage').then((module) => ({ default: module.ScheduleInterviewPage })));
+const RescheduleInterviewPage = lazy(() => import('../features/interviews/RescheduleInterviewPage').then((module) => ({ default: module.RescheduleInterviewPage })));
+const InterviewDetailPage = lazy(() => import('../features/interviews/InterviewDetailPage').then((module) => ({ default: module.InterviewDetailPage })));
 const TasksPage = lazy(() => import('../features/tasks/TasksPage').then((module) => ({ default: module.TasksPage })));
 
 const navigation = [
@@ -21,6 +24,7 @@ const navigation = [
 export function App() {
   const [opened, { toggle, close }] = useDisclosure();
   const location = useLocation();
+  const inInterviewFlow = location.pathname.includes('/interviews');
 
   return (
     <AppShell
@@ -45,7 +49,10 @@ export function App() {
             to={item.path}
             label={item.label}
             leftSection={<Text size="xs" fw={700} c="dimmed">{item.mark}</Text>}
-            active={item.path === '/' ? location.pathname === '/' : location.pathname.startsWith(item.path)}
+            active={item.path === '/' ? location.pathname === '/'
+              : item.path === '/interviews' ? inInterviewFlow
+                : item.path === '/applications' ? location.pathname.startsWith('/applications') && !inInterviewFlow
+                  : location.pathname.startsWith(item.path)}
             onClick={close}
             mb={4}
           />
@@ -61,6 +68,9 @@ export function App() {
               <Route path="/applications/new" element={<CreateApplicationPage />} />
               <Route path="/applications/:id/edit" element={<EditApplicationPage />} />
               <Route path="/applications/:id" element={<ApplicationDetailPage />} />
+              <Route path="/applications/:applicationId/interviews/new" element={<ScheduleInterviewPage />} />
+              <Route path="/applications/:applicationId/interviews/:interviewId/edit" element={<RescheduleInterviewPage />} />
+              <Route path="/applications/:applicationId/interviews/:interviewId" element={<InterviewDetailPage />} />
               <Route path="/interviews" element={<InterviewsPage />} />
               <Route path="/tasks" element={<TasksPage />} />
               <Route path="*" element={<Navigate to="/" replace />} />

@@ -4,13 +4,15 @@ import { Link } from 'react-router';
 import { applicationApi } from '../applications/api';
 import { statusColors, statusLabels } from '../applications/status';
 import { getJson } from '../../shared/api/client';
-import type { ApplicationStatus, FollowUpTask, Interview, Page } from '../../shared/api/types';
+import type { ApplicationStatus, FollowUpTask, Page } from '../../shared/api/types';
 import { QueryState } from '../../shared/components/QueryState';
 import { formatDate } from '../../shared/format';
+import { interviewApi } from '../interviews/api';
+import { interviewTypeLabels } from '../interviews/status';
 
 export function DashboardPage() {
   const statistics = useQuery({ queryKey: ['application-statistics'], queryFn: applicationApi.statistics });
-  const interviews = useQuery({ queryKey: ['upcoming-interviews'], queryFn: () => getJson<Page<Interview>>('/api/interviews/upcoming', { size: 3 }) });
+  const interviews = useQuery({ queryKey: ['upcoming-interviews'], queryFn: () => interviewApi.upcoming({ size: 3 }) });
   const tasks = useQuery({ queryKey: ['open-tasks'], queryFn: () => getJson<Page<FollowUpTask>>('/api/tasks', { status: 'TODO', size: 3 }) });
 
   return <Stack gap="xl">
@@ -25,7 +27,7 @@ export function DashboardPage() {
       <Card withBorder radius="lg" p="lg">
         <Group justify="space-between" mb="md"><Title order={3}>未来 7 天面试</Title><Text component={Link} to="/interviews" size="sm" c="indigo">查看全部 →</Text></Group>
         <QueryState loading={interviews.isPending} error={interviews.error} empty={interviews.data?.content.length === 0}>
-          <Stack gap="sm">{interviews.data?.content.map((item) => <Group key={item.id} justify="space-between" className="list-row"><div><Text fw={600}>第 {item.round} 轮 · 申请 #{item.applicationId}</Text><Text size="sm" c="dimmed">{formatDate(item.startsAt)}</Text></div><Badge variant="light">{item.type}</Badge></Group>)}</Stack>
+          <Stack gap="sm">{interviews.data?.content.map((item) => <Group key={item.id} justify="space-between" className="list-row"><div><Text component={Link} to={`/applications/${item.applicationId}/interviews/${item.id}`} fw={600} c="indigo">第 {item.round} 轮 · 申请 #{item.applicationId}</Text><Text size="sm" c="dimmed">{formatDate(item.startsAt)}</Text></div><Badge variant="light">{interviewTypeLabels[item.type]}</Badge></Group>)}</Stack>
         </QueryState>
       </Card>
       <Card withBorder radius="lg" p="lg">

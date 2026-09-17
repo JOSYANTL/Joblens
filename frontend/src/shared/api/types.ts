@@ -40,9 +40,38 @@ export interface Interview {
   id: number;
   applicationId: number;
   round: number;
-  type: string;
+  type: InterviewType;
   startsAt: string;
-  status: 'SCHEDULED' | 'COMPLETED' | 'CANCELLED';
+  endsAt: string;
+  durationMinutes: number;
+  contact: string;
+  meetingUrl: string;
+  location: string;
+  status: InterviewStatus;
+  feedback: InterviewFeedback;
+  createdAt: string;
+  updatedAt: string;
+  completedAt: string | null;
+  version: number;
+}
+
+export type InterviewType = 'PHONE' | 'VIDEO' | 'ONSITE' | 'OTHER';
+export type InterviewStatus = 'SCHEDULED' | 'COMPLETED' | 'CANCELLED';
+
+export interface InterviewDetails {
+  round: number;
+  type: InterviewType;
+  startsAt: string;
+  durationMinutes: number;
+  contact: string;
+  meetingUrl: string;
+  location: string;
+}
+
+export interface InterviewFeedback {
+  questions: string;
+  summary: string;
+  nextSteps: string;
 }
 
 export interface FollowUpTask {
