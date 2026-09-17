@@ -5,6 +5,8 @@ import { lazy, Suspense } from 'react';
 
 const DashboardPage = lazy(() => import('../features/dashboard/DashboardPage').then((module) => ({ default: module.DashboardPage })));
 const ApplicationsPage = lazy(() => import('../features/applications/ApplicationsPage').then((module) => ({ default: module.ApplicationsPage })));
+const CreateApplicationPage = lazy(() => import('../features/applications/CreateApplicationPage').then((module) => ({ default: module.CreateApplicationPage })));
+const ApplicationDetailPage = lazy(() => import('../features/applications/ApplicationDetailPage').then((module) => ({ default: module.ApplicationDetailPage })));
 const InterviewsPage = lazy(() => import('../features/interviews/InterviewsPage').then((module) => ({ default: module.InterviewsPage })));
 const TasksPage = lazy(() => import('../features/tasks/TasksPage').then((module) => ({ default: module.TasksPage })));
 
@@ -42,7 +44,7 @@ export function App() {
             to={item.path}
             label={item.label}
             leftSection={<Text size="xs" fw={700} c="dimmed">{item.mark}</Text>}
-            active={location.pathname === item.path}
+            active={item.path === '/' ? location.pathname === '/' : location.pathname.startsWith(item.path)}
             onClick={close}
             mb={4}
           />
@@ -55,6 +57,8 @@ export function App() {
             <Routes>
               <Route path="/" element={<DashboardPage />} />
               <Route path="/applications" element={<ApplicationsPage />} />
+              <Route path="/applications/new" element={<CreateApplicationPage />} />
+              <Route path="/applications/:id" element={<ApplicationDetailPage />} />
               <Route path="/interviews" element={<InterviewsPage />} />
               <Route path="/tasks" element={<TasksPage />} />
               <Route path="*" element={<Navigate to="/" replace />} />

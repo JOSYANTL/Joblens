@@ -2,7 +2,7 @@ import { Badge, Card, Group, SimpleGrid, Stack, Text, Title } from '@mantine/cor
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router';
 import { applicationApi } from '../applications/api';
-import { statusColors, statusLabels } from '../applications/ApplicationsPage';
+import { statusColors, statusLabels } from '../applications/status';
 import { getJson } from '../../shared/api/client';
 import type { ApplicationStatus, FollowUpTask, Interview, Page } from '../../shared/api/types';
 import { QueryState } from '../../shared/components/QueryState';

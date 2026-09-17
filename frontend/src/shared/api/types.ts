@@ -24,6 +24,18 @@ export interface ApplicationStatistics {
   byStatus: Partial<Record<ApplicationStatus, number>>;
 }
 
+export interface AvailableApplicationStatuses {
+  currentStatus: ApplicationStatus;
+  availableStatuses: ApplicationStatus[];
+}
+
+export interface ApplicationStatusHistory {
+  id: number;
+  fromStatus: ApplicationStatus | null;
+  toStatus: ApplicationStatus;
+  changedAt: string;
+}
+
 export interface Interview {
   id: number;
   applicationId: number;
