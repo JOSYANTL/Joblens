@@ -1,4 +1,4 @@
-import { getJson, sendJson } from '../../shared/api/client';
+import { deleteResource, getJson, sendJson } from '../../shared/api/client';
 import type { ApplicationStatistics, ApplicationStatus, ApplicationStatusHistory, AvailableApplicationStatuses, JobApplication, Page } from '../../shared/api/types';
 
 export const applicationApi = {
@@ -10,6 +10,9 @@ export const applicationApi = {
   statusHistory: (id: number) => getJson<ApplicationStatusHistory[]>(`/api/applications/${id}/status-history`),
   create: (body: { company: string; position: string; description: string }) =>
     sendJson<JobApplication>('/api/applications', 'POST', body),
+  update: (id: number, body: { company: string; position: string; description: string; version: number }) =>
+    sendJson<JobApplication>(`/api/applications/${id}`, 'PUT', body),
   updateStatus: (id: number, status: ApplicationStatus, version: number) =>
     sendJson<JobApplication>(`/api/applications/${id}/status`, 'PATCH', { status, version }),
+  delete: (id: number) => deleteResource(`/api/applications/${id}`),
 };
