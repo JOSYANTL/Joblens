@@ -13,6 +13,9 @@ const ScheduleInterviewPage = lazy(() => import('../features/interviews/Schedule
 const RescheduleInterviewPage = lazy(() => import('../features/interviews/RescheduleInterviewPage').then((module) => ({ default: module.RescheduleInterviewPage })));
 const InterviewDetailPage = lazy(() => import('../features/interviews/InterviewDetailPage').then((module) => ({ default: module.InterviewDetailPage })));
 const TasksPage = lazy(() => import('../features/tasks/TasksPage').then((module) => ({ default: module.TasksPage })));
+const CreateTaskPage = lazy(() => import('../features/tasks/CreateTaskPage').then((module) => ({ default: module.CreateTaskPage })));
+const EditTaskPage = lazy(() => import('../features/tasks/EditTaskPage').then((module) => ({ default: module.EditTaskPage })));
+const TaskDetailPage = lazy(() => import('../features/tasks/TaskDetailPage').then((module) => ({ default: module.TaskDetailPage })));
 
 const navigation = [
   { label: '总览', path: '/', mark: '01' },
@@ -25,6 +28,7 @@ export function App() {
   const [opened, { toggle, close }] = useDisclosure();
   const location = useLocation();
   const inInterviewFlow = location.pathname.includes('/interviews');
+  const inTaskFlow = location.pathname.includes('/tasks');
 
   return (
     <AppShell
@@ -51,7 +55,8 @@ export function App() {
             leftSection={<Text size="xs" fw={700} c="dimmed">{item.mark}</Text>}
             active={item.path === '/' ? location.pathname === '/'
               : item.path === '/interviews' ? inInterviewFlow
-                : item.path === '/applications' ? location.pathname.startsWith('/applications') && !inInterviewFlow
+              : item.path === '/tasks' ? inTaskFlow
+                : item.path === '/applications' ? location.pathname.startsWith('/applications') && !inInterviewFlow && !inTaskFlow
                   : location.pathname.startsWith(item.path)}
             onClick={close}
             mb={4}
@@ -73,6 +78,9 @@ export function App() {
               <Route path="/applications/:applicationId/interviews/:interviewId" element={<InterviewDetailPage />} />
               <Route path="/interviews" element={<InterviewsPage />} />
               <Route path="/tasks" element={<TasksPage />} />
+              <Route path="/applications/:applicationId/tasks/new" element={<CreateTaskPage />} />
+              <Route path="/applications/:applicationId/tasks/:taskId/edit" element={<EditTaskPage />} />
+              <Route path="/applications/:applicationId/tasks/:taskId" element={<TaskDetailPage />} />
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </Suspense>

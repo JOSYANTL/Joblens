@@ -3,17 +3,17 @@ import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router';
 import { applicationApi } from '../applications/api';
 import { statusColors, statusLabels } from '../applications/status';
-import { getJson } from '../../shared/api/client';
-import type { ApplicationStatus, FollowUpTask, Page } from '../../shared/api/types';
+import type { ApplicationStatus } from '../../shared/api/types';
 import { QueryState } from '../../shared/components/QueryState';
 import { formatDate } from '../../shared/format';
 import { interviewApi } from '../interviews/api';
 import { interviewTypeLabels } from '../interviews/status';
+import { taskApi } from '../tasks/api';
 
 export function DashboardPage() {
   const statistics = useQuery({ queryKey: ['application-statistics'], queryFn: applicationApi.statistics });
   const interviews = useQuery({ queryKey: ['upcoming-interviews'], queryFn: () => interviewApi.upcoming({ size: 3 }) });
-  const tasks = useQuery({ queryKey: ['open-tasks'], queryFn: () => getJson<Page<FollowUpTask>>('/api/tasks', { status: 'TODO', size: 3 }) });
+  const tasks = useQuery({ queryKey: ['open-tasks'], queryFn: () => taskApi.list({ page: 0, status: 'TODO', size: 3 }) });
 
   return <Stack gap="xl">
     <div><Text c="indigo" fw={700} size="sm">OVERVIEW</Text><Title order={1}>求职总览</Title><Text c="dimmed">今天也向下一份机会更近一步。</Text></div>
@@ -33,7 +33,7 @@ export function DashboardPage() {
       <Card withBorder radius="lg" p="lg">
         <Group justify="space-between" mb="md"><Title order={3}>待办跟进</Title><Text component={Link} to="/tasks" size="sm" c="indigo">查看全部 →</Text></Group>
         <QueryState loading={tasks.isPending} error={tasks.error} empty={tasks.data?.content.length === 0}>
-          <Stack gap="sm">{tasks.data?.content.map((item) => <Group key={item.id} justify="space-between" className="list-row"><div><Text fw={600}>{item.title}</Text><Text size="sm" c="dimmed">截止 {formatDate(item.dueAt)}</Text></div>{item.overdue && <Badge color="red" variant="light">已逾期</Badge>}</Group>)}</Stack>
+          <Stack gap="sm">{tasks.data?.content.map((item) => <Group key={item.id} justify="space-between" className="list-row"><div><Text component={Link} to={`/applications/${item.applicationId}/tasks/${item.id}`} fw={600} c="indigo">{item.title}</Text><Text size="sm" c="dimmed">截止 {formatDate(item.dueAt)}</Text></div>{item.overdue && <Badge color="red" variant="light">已逾期</Badge>}</Group>)}</Stack>
         </QueryState>
       </Card>
     </SimpleGrid>

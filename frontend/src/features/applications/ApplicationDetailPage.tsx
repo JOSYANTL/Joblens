@@ -12,6 +12,8 @@ import { DeleteApplicationDialog } from './DeleteApplicationDialog';
 import { statusColors, statusLabels } from './status';
 import { interviewApi } from '../interviews/api';
 import { interviewStatusColors, interviewStatusLabels, interviewTypeLabels } from '../interviews/status';
+import { taskApi } from '../tasks/api';
+import { taskStatusColors, taskStatusLabels } from '../tasks/status';
 
 export function ApplicationDetailPage() {
   const { id: rawId } = useParams();
@@ -26,6 +28,7 @@ export function ApplicationDetailPage() {
   const statuses = useQuery({ queryKey: ['application-statuses', id], queryFn: () => applicationApi.availableStatuses(id), enabled: validId });
   const history = useQuery({ queryKey: ['application-status-history', id], queryFn: () => applicationApi.statusHistory(id), enabled: validId });
   const interviews = useQuery({ queryKey: ['interviews', { applicationId: id, page: 0 }], queryFn: () => interviewApi.list({ applicationId: id, page: 0, size: 5 }), enabled: validId });
+  const tasks = useQuery({ queryKey: ['tasks', { applicationId: id, page: 0 }], queryFn: () => taskApi.list({ applicationId: id, page: 0, size: 5 }), enabled: validId });
   const changeStatus = useMutation({
     mutationFn: (status: ApplicationStatus) => applicationApi.updateStatus(id, status, application.data!.version),
     onSuccess: async () => {
@@ -52,6 +55,8 @@ export function ApplicationDetailPage() {
         queryClient.invalidateQueries({ queryKey: ['application-status-history', id], exact: true, refetchType: 'none' }),
         queryClient.invalidateQueries({ queryKey: ['interviews'] }),
         queryClient.invalidateQueries({ queryKey: ['upcoming-interviews'] }),
+        queryClient.invalidateQueries({ queryKey: ['tasks'] }),
+        queryClient.invalidateQueries({ queryKey: ['open-tasks'] }),
       ]);
       navigate('/applications');
     },
@@ -107,6 +112,13 @@ export function ApplicationDetailPage() {
         <Stack gap="sm">{interviews.data?.content.map((item) => <Group key={item.id} justify="space-between" className="list-row"><div><Text fw={600}>第 {item.round} 轮 · {interviewTypeLabels[item.type]}</Text><Text size="sm" c="dimmed">{formatDate(item.startsAt)}</Text></div><Group><Badge color={interviewStatusColors[item.status]} variant="light">{interviewStatusLabels[item.status]}</Badge><Button component={Link} to={`/applications/${id}/interviews/${item.id}`} variant="subtle" size="xs">查看详情</Button></Group></Group>)}</Stack>
       </QueryState>
       {interviews.data && interviews.data.totalElements > 5 && <Text component={Link} to={`/interviews?applicationId=${id}`} size="sm" c="indigo" mt="md">查看该申请的全部面试 →</Text>}
+    </Card>
+    <Card withBorder radius="lg" p="lg">
+      <Group justify="space-between" mb="md"><Title order={3}>跟进任务</Title><Button component={Link} to={`/applications/${id}/tasks/new`} size="sm" disabled={!application.data}>新建任务</Button></Group>
+      <QueryState loading={tasks.isPending} error={tasks.error} empty={tasks.data?.content.length === 0}>
+        <Stack gap="sm">{tasks.data?.content.map((item) => <Group key={item.id} justify="space-between" className="list-row"><div><Text fw={600}>{item.title}</Text><Text size="sm" c="dimmed">截止 {formatDate(item.dueAt)}</Text></div><Group><Badge color={item.overdue ? 'red' : taskStatusColors[item.status]} variant="light">{item.overdue ? '已逾期' : taskStatusLabels[item.status]}</Badge><Button component={Link} to={`/applications/${id}/tasks/${item.id}`} variant="subtle" size="xs">查看详情</Button></Group></Group>)}</Stack>
+      </QueryState>
+      {tasks.data && tasks.data.totalElements > 5 && <Text component={Link} to={`/tasks?applicationId=${id}`} size="sm" c="indigo" mt="md">查看该申请的全部任务 →</Text>}
     </Card>
     <DeleteApplicationDialog opened={deleteOpened} company={application.data?.company ?? ''} position={application.data?.position ?? ''} pending={remove.isPending} error={remove.error} onClose={closeDelete} onConfirm={() => remove.mutate()} />
   </Stack>;

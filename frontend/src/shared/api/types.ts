@@ -78,7 +78,20 @@ export interface FollowUpTask {
   id: number;
   applicationId: number;
   title: string;
+  notes: string;
   dueAt: string;
-  status: string;
+  status: FollowUpTaskStatus;
+  createdAt: string;
+  updatedAt: string;
+  completedAt: string | null;
+  version: number;
   overdue: boolean;
+}
+
+export type FollowUpTaskStatus = 'TODO' | 'DONE' | 'CANCELLED';
+
+export interface FollowUpTaskDetails {
+  title: string;
+  notes: string;
+  dueAt: string;
 }
