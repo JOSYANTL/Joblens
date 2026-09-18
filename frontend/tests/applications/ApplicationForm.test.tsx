@@ -3,7 +3,7 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router';
 import { describe, expect, it, vi } from 'vitest';
-import { ApplicationForm } from './ApplicationForm';
+import { ApplicationForm } from '../../src/features/applications/ApplicationForm';
 
 describe('ApplicationForm', () => {
   it('validates required fields and submits trimmed values', async () => {
