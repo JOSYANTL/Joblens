@@ -1,9 +1,11 @@
 package com.josyantl.joblens.job.domain.model;
 
+import com.josyantl.joblens.job.domain.exception.InvalidApplicationStatusTransitionException;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
 import java.time.LocalDateTime;
+import java.util.Set;
 
 @Getter
 @AllArgsConstructor(access = lombok.AccessLevel.PRIVATE)
@@ -15,6 +17,7 @@ public class JobApplication {
     private ApplicationStatus status;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+    private long version;
 
     public static JobApplication create(
             String company,
@@ -29,7 +32,8 @@ public class JobApplication {
                 requireText(description, "Description"),
                 ApplicationStatus.SAVED,
                 now,
-                now
+                now,
+                0L
         );
     }
 
@@ -40,7 +44,8 @@ public class JobApplication {
             String description,
             ApplicationStatus status,
             LocalDateTime createdAt,
-            LocalDateTime updatedAt
+            LocalDateTime updatedAt,
+            long version
     ) {
         if (id == null || id <= 0) {
             throw new IllegalArgumentException("Id must be positive");
@@ -53,7 +58,8 @@ public class JobApplication {
                 requireText(description, "Description"),
                 requireNonNull(status, "Status"),
                 requireNonNull(createdAt, "Created at"),
-                requireNonNull(updatedAt, "Updated at")
+                requireNonNull(updatedAt, "Updated at"),
+                requireNonNegative(version, "Version")
         );
     }
 
@@ -62,9 +68,16 @@ public class JobApplication {
         if (status == validStatus) {
             return;
         }
+        if (!status.canTransitionTo(validStatus)) {
+            throw new InvalidApplicationStatusTransitionException(status, validStatus);
+        }
 
         status = validStatus;
         updatedAt = LocalDateTime.now();
+    }
+
+    public Set<ApplicationStatus> availableStatuses() {
+        return status.allowedTransitions();
     }
 
     public void updateDetails(String company, String position, String description) {
@@ -98,6 +111,13 @@ public class JobApplication {
     private static <T> T requireNonNull(T value, String fieldName) {
         if (value == null) {
             throw new IllegalArgumentException(fieldName + " must not be null");
+        }
+        return value;
+    }
+
+    private static long requireNonNegative(long value, String fieldName) {
+        if (value < 0) {
+            throw new IllegalArgumentException(fieldName + " must not be negative");
         }
         return value;
     }

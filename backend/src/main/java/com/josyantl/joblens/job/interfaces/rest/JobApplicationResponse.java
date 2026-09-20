@@ -12,7 +12,8 @@ public record JobApplicationResponse(
         String description,
         ApplicationStatus status,
         LocalDateTime createdAt,
-        LocalDateTime updatedAt
+        LocalDateTime updatedAt,
+        long version
 ) {
 
     public static JobApplicationResponse from(JobApplication application) {
@@ -23,7 +24,8 @@ public record JobApplicationResponse(
                 application.getDescription(),
                 application.getStatus(),
                 application.getCreatedAt(),
-                application.getUpdatedAt()
+                application.getUpdatedAt(),
+                application.getVersion()
         );
     }
 }

@@ -1,0 +1,6 @@
+:root { color-scheme: light; }
+body { background: #f7f8fc; }
+.mantine-AppShell-header, .mantine-AppShell-navbar { background: #fff; border-color: #e9ebf1; }
+.brand-mark { width: 32px; height: 32px; display: grid; place-items: center; border-radius: 9px; background: #4c6ef5; color: #fff; font-weight: 800; }
+.list-row { padding: 12px 0; border-bottom: 1px solid #eef0f4; }
+.list-row:last-child { border-bottom: 0; }

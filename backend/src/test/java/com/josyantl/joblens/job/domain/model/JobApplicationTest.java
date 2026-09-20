@@ -1,5 +1,6 @@
 package com.josyantl.joblens.job.domain.model;
 
+import com.josyantl.joblens.job.domain.exception.InvalidApplicationStatusTransitionException;
 import org.junit.jupiter.api.Test;
 
 import java.time.LocalDateTime;
@@ -58,13 +59,15 @@ class JobApplicationTest {
                 "Java and Spring Boot",
                 ApplicationStatus.APPLIED,
                 createdAt,
-                updatedAt
+                updatedAt,
+                3L
         );
 
         assertEquals(42L, application.getId());
         assertEquals(ApplicationStatus.APPLIED, application.getStatus());
         assertEquals(createdAt, application.getCreatedAt());
         assertEquals(updatedAt, application.getUpdatedAt());
+        assertEquals(3L, application.getVersion());
     }
 
     @Test
@@ -78,7 +81,8 @@ class JobApplicationTest {
                 "Java and Spring Boot",
                 ApplicationStatus.SAVED,
                 createdAt,
-                previousUpdatedAt
+                previousUpdatedAt,
+                0L
         );
 
         application.changeStatus(ApplicationStatus.APPLIED);
@@ -110,7 +114,8 @@ class JobApplicationTest {
                 "Old description",
                 ApplicationStatus.APPLIED,
                 createdAt,
-                previousUpdatedAt
+                previousUpdatedAt,
+                0L
         );
 
         application.updateDetails(
@@ -142,5 +147,64 @@ class JobApplicationTest {
         assertEquals("Example Company", application.getCompany());
         assertEquals("Backend Engineer", application.getPosition());
         assertEquals("Java and Spring Boot", application.getDescription());
+    }
+
+    @Test
+    void exposesAllowedStatusTransitions() {
+        JobApplication application = JobApplication.create(
+                "Example Company",
+                "Backend Engineer",
+                "Java and Spring Boot"
+        );
+
+        assertEquals(
+                java.util.Set.of(ApplicationStatus.APPLIED),
+                application.availableStatuses()
+        );
+
+        application.changeStatus(ApplicationStatus.APPLIED);
+
+        assertEquals(
+                java.util.Set.of(
+                        ApplicationStatus.INTERVIEW_SCHEDULED,
+                        ApplicationStatus.REJECTED
+                ),
+                application.availableStatuses()
+        );
+    }
+
+    @Test
+    void rejectsInvalidStatusTransitionWithoutChangingApplication() {
+        JobApplication application = JobApplication.create(
+                "Example Company",
+                "Backend Engineer",
+                "Java and Spring Boot"
+        );
+        LocalDateTime previousUpdatedAt = application.getUpdatedAt();
+
+        assertThrows(
+                InvalidApplicationStatusTransitionException.class,
+                () -> application.changeStatus(ApplicationStatus.OFFERED)
+        );
+        assertEquals(ApplicationStatus.SAVED, application.getStatus());
+        assertEquals(previousUpdatedAt, application.getUpdatedAt());
+    }
+
+    @Test
+    void terminalStatusesHaveNoAvailableTransitions() {
+        JobApplication application = JobApplication.create(
+                "Example Company",
+                "Backend Engineer",
+                "Java and Spring Boot"
+        );
+        application.changeStatus(ApplicationStatus.APPLIED);
+        application.changeStatus(ApplicationStatus.INTERVIEW_SCHEDULED);
+        application.changeStatus(ApplicationStatus.OFFERED);
+
+        assertTrue(application.availableStatuses().isEmpty());
+        assertThrows(
+                InvalidApplicationStatusTransitionException.class,
+                () -> application.changeStatus(ApplicationStatus.REJECTED)
+        );
     }
 }
