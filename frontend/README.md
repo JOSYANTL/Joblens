@@ -4,7 +4,7 @@
 
 ## 本地启动
 
-需要 Node.js 22.12+（或 20.19+）。先启动仓库根目录的 PostgreSQL 和 `backend` Spring Boot 服务，再运行：
+需要 Node.js 22.12+、24.x 或 26+（不支持奇数版本的 Node.js）。先启动仓库根目录的 PostgreSQL 和 `backend` Spring Boot 服务，再运行：
 
 ```bash
 cd frontend
@@ -29,3 +29,19 @@ npm run dev
 cd frontend
 npm test
 ```
+
+## 端到端测试
+
+端到端测试位于 `tests/e2e`，使用 Playwright 驱动 Chromium，覆盖“创建申请 → 预约面试 → 创建并完成跟进任务”的完整流程。测试结束后会删除自己创建的申请及关联数据。
+
+首次运行先安装浏览器，并确保 Docker 中的 PostgreSQL 已启动、当前终端使用 Java 21：
+
+```bash
+cd frontend
+npx playwright install --no-shell chromium
+npm run test:e2e
+```
+
+Playwright 会自动启动并关闭 Spring Boot 与 Vite；如果本地服务已经运行则会复用。调试时可以运行 `npm run test:e2e:ui`。
+
+GitHub Actions 的 Frontend CI 会分别执行单元/组件测试、生产构建和 Chromium 端到端测试；失败时会上传 Playwright HTML 报告。
