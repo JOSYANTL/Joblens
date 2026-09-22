@@ -20,3 +20,8 @@ server:
         http-only: true
         same-site: strict
         secure: ${SESSION_COOKIE_SECURE:false}
+
+joblens:
+  notifications:
+    initial-delay: ${NOTIFICATION_INITIAL_DELAY:PT1M}
+    interval: ${NOTIFICATION_INTERVAL:PT15M}

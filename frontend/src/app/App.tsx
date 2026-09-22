@@ -3,6 +3,7 @@ import { useDisclosure } from '@mantine/hooks';
 import { NavLink as RouterLink, Navigate, Route, Routes, useLocation } from 'react-router';
 import { lazy, Suspense } from 'react';
 import { useAuth } from '../features/auth/AuthContext';
+import { NotificationButton } from '../features/notifications/NotificationButton';
 
 const DashboardPage = lazy(() => import('../features/dashboard/DashboardPage').then((module) => ({ default: module.DashboardPage })));
 const ApplicationsPage = lazy(() => import('../features/applications/ApplicationsPage').then((module) => ({ default: module.ApplicationsPage })));
@@ -19,12 +20,14 @@ const EditTaskPage = lazy(() => import('../features/tasks/EditTaskPage').then((m
 const TaskDetailPage = lazy(() => import('../features/tasks/TaskDetailPage').then((module) => ({ default: module.TaskDetailPage })));
 const LoginPage = lazy(() => import('../features/auth/LoginPage').then((module) => ({ default: module.LoginPage })));
 const RegisterPage = lazy(() => import('../features/auth/RegisterPage').then((module) => ({ default: module.RegisterPage })));
+const NotificationsPage = lazy(() => import('../features/notifications/NotificationsPage').then((module) => ({ default: module.NotificationsPage })));
 
 const navigation = [
   { label: '总览', path: '/', mark: '01' },
   { label: '职位申请', path: '/applications', mark: '02' },
   { label: '面试安排', path: '/interviews', mark: '03' },
   { label: '跟进任务', path: '/tasks', mark: '04' },
+  { label: '通知中心', path: '/notifications', mark: '05' },
 ];
 
 export function App() {
@@ -53,6 +56,7 @@ export function App() {
           <Box className="brand-mark">J</Box>
           <Title order={3} size="h4">Joblens</Title>
           <Text c="dimmed" size="sm" ml="auto" visibleFrom="sm">{auth.user.displayName}</Text>
+          <NotificationButton />
           <Button variant="subtle" size="sm" onClick={() => void auth.logout()}>退出</Button>
         </Group>
       </AppShell.Header>
@@ -90,6 +94,7 @@ export function App() {
               <Route path="/applications/:applicationId/interviews/:interviewId" element={<InterviewDetailPage />} />
               <Route path="/interviews" element={<InterviewsPage />} />
               <Route path="/tasks" element={<TasksPage />} />
+              <Route path="/notifications" element={<NotificationsPage />} />
               <Route path="/applications/:applicationId/tasks/new" element={<CreateTaskPage />} />
               <Route path="/applications/:applicationId/tasks/:taskId/edit" element={<EditTaskPage />} />
               <Route path="/applications/:applicationId/tasks/:taskId" element={<TaskDetailPage />} />

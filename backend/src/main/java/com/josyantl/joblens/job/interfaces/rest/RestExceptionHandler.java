@@ -9,6 +9,7 @@ import com.josyantl.joblens.job.application.exception.FollowUpTaskConflictExcept
 import com.josyantl.joblens.job.application.exception.StaleJobApplicationVersionException;
 import com.josyantl.joblens.job.domain.exception.InvalidApplicationStatusTransitionException;
 import com.josyantl.joblens.identity.application.exception.EmailAlreadyRegisteredException;
+import com.josyantl.joblens.notification.application.exception.NotificationNotFoundException;
 import jakarta.validation.ConstraintViolationException;
 import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.http.HttpStatus;
@@ -25,6 +26,13 @@ import java.util.Map;
 
 @RestControllerAdvice
 public class RestExceptionHandler {
+
+    @ExceptionHandler(NotificationNotFoundException.class)
+    public ProblemDetail handleNotificationNotFound(NotificationNotFoundException exception) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, exception.getMessage());
+        problem.setTitle("Notification not found");
+        return problem;
+    }
 
     @ExceptionHandler(BadCredentialsException.class)
     public ProblemDetail handleBadCredentials(BadCredentialsException exception) {
