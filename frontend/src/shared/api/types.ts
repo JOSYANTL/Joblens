@@ -95,3 +95,9 @@ export interface FollowUpTaskDetails {
   notes: string;
   dueAt: string;
 }
+
+export interface AuthUser {
+  id: number;
+  email: string;
+  displayName: string;
+}

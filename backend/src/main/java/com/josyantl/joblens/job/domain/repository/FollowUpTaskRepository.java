@@ -7,6 +7,6 @@ import java.util.Optional;
 public interface FollowUpTaskRepository {
     FollowUpTask save(FollowUpTask task);
     Optional<FollowUpTask> findById(Long id);
-    FollowUpTaskPage search(FollowUpTaskQuery query, Instant now);
+    FollowUpTaskPage search(FollowUpTaskQuery query, Instant now, Long userId);
     void delete(FollowUpTask task);
 }

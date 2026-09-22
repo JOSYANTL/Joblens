@@ -11,6 +11,8 @@ them, instead of creating empty controller, DTO, entity, and repository classes.
 ```text
 com.josyantl.joblens
 ├── BackendApplication
+├── identity             # Accounts, registration, and security adapters
+├── shared               # Small cross-context application ports
 └── job
     ├── domain          # Business concepts and rules; no Spring or persistence code
     ├── application     # Use cases and ports; coordinates the domain
@@ -54,6 +56,30 @@ Check that the service and database are healthy:
 ```bash
 curl http://localhost:8080/actuator/health
 ```
+
+## Authentication and data isolation
+
+All application, interview, and task APIs require an authenticated session.
+Create an account or sign in through the frontend at `http://localhost:5173`.
+The backend stores only encoded passwords, uses an HttpOnly session cookie, and
+requires a CSRF token for every state-changing request. Each query is scoped to
+the current user, so an id owned by another account is returned as not found.
+
+The authentication endpoints are:
+
+| Method | Route | Purpose |
+| --- | --- | --- |
+| GET | `/api/auth/csrf` | Initialize a CSRF token and cookie |
+| POST | `/api/auth/register` | Create an account and start a session |
+| POST | `/api/auth/login` | Start a session |
+| GET | `/api/auth/me` | Read the current account |
+| POST | `/api/auth/logout` | End the session |
+
+For HTTPS deployments, set `SESSION_COOKIE_SECURE=true`. Local HTTP development
+uses the default `false`. API clients must retain both the `JOBLENS_SESSION` and
+`XSRF-TOKEN` cookies and send the CSRF value in the `X-XSRF-TOKEN` header for
+POST, PUT, PATCH, and DELETE requests. The curl examples below show business
+payloads only; add those session and CSRF values when calling them directly.
 
 Create and search job applications:
 
@@ -214,9 +240,8 @@ work. Encode the plus sign as `%2B` when putting a positive offset in a query UR
 V5 creates the task table and indexes automatically on startup. This feature
 provides task tracking and queries, not background email or push reminders.
 
-The project is still a local, single-user backend without authentication; checking
-the parent application id prevents accidental cross-application edits but does
-not implement user authorization.
+Follow-up tasks are authorized through their parent application and are visible
+only to that application's owner.
 
 ## Interview scheduling and feedback
 

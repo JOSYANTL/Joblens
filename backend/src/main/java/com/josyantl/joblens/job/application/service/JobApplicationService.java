@@ -14,6 +14,7 @@ import com.josyantl.joblens.job.domain.repository.JobApplicationPage;
 import com.josyantl.joblens.job.domain.repository.JobApplicationSearchCriteria;
 import com.josyantl.joblens.job.domain.repository.JobApplicationStatusHistoryRepository;
 import lombok.RequiredArgsConstructor;
+import com.josyantl.joblens.shared.application.CurrentUserProvider;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,6 +26,7 @@ public class JobApplicationService {
 
     private final JobApplicationRepository repository;
     private final JobApplicationStatusHistoryRepository statusHistoryRepository;
+    private final CurrentUserProvider currentUser;
 
     @Transactional
     public JobApplication create(CreateJobApplicationCommand command) {
@@ -33,7 +35,7 @@ public class JobApplicationService {
                 command.position(),
                 command.description()
         );
-        JobApplication savedApplication = repository.save(application);
+        JobApplication savedApplication = repository.save(application, currentUser.userId());
         statusHistoryRepository.save(JobApplicationStatusHistory.creation(
                 savedApplication.getId(),
                 savedApplication.getStatus(),
@@ -44,12 +46,12 @@ public class JobApplicationService {
 
     @Transactional(readOnly = true)
     public List<JobApplication> findAll() {
-        return repository.findAll();
+        return repository.findAll(currentUser.userId());
     }
 
     @Transactional(readOnly = true)
     public JobApplicationPage search(JobApplicationSearchCriteria criteria) {
-        return repository.search(criteria);
+        return repository.search(criteria, currentUser.userId());
     }
 
     @Transactional(readOnly = true)
@@ -59,7 +61,7 @@ public class JobApplicationService {
 
     @Transactional(readOnly = true)
     public JobApplicationStatistics getStatistics() {
-        return new JobApplicationStatistics(repository.countByStatus());
+        return new JobApplicationStatistics(repository.countByStatus(currentUser.userId()));
     }
 
     @Transactional
@@ -71,7 +73,7 @@ public class JobApplicationService {
                 command.position(),
                 command.description()
         );
-        return repository.save(application);
+        return repository.save(application, currentUser.userId());
     }
 
     @Transactional
@@ -81,7 +83,7 @@ public class JobApplicationService {
         ApplicationStatus previousStatus = application.getStatus();
 
         application.changeStatus(command.status());
-        JobApplication savedApplication = repository.save(application);
+        JobApplication savedApplication = repository.save(application, currentUser.userId());
         if (previousStatus != savedApplication.getStatus()) {
             statusHistoryRepository.save(JobApplicationStatusHistory.change(
                     savedApplication.getId(),
@@ -102,11 +104,11 @@ public class JobApplicationService {
     @Transactional
     public void delete(Long id) {
         getById(id);
-        repository.deleteById(id);
+        repository.deleteById(id, currentUser.userId());
     }
 
     private JobApplication getById(Long id) {
-        return repository.findById(id)
+        return repository.findById(id, currentUser.userId())
                 .orElseThrow(() -> new JobApplicationNotFoundException(id));
     }
 
