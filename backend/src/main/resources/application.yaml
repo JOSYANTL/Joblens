@@ -2,6 +2,11 @@ spring:
   application:
     name: joblens
 
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 11MB
+
   jpa:
     open-in-view: false
 
@@ -22,6 +27,8 @@ server:
         secure: ${SESSION_COOKIE_SECURE:false}
 
 joblens:
+  documents:
+    storage-root: ${DOCUMENT_STORAGE_ROOT:${java.io.tmpdir}/joblens-documents}
   notifications:
     initial-delay: ${NOTIFICATION_INITIAL_DELAY:PT1M}
     interval: ${NOTIFICATION_INTERVAL:PT15M}

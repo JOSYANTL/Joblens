@@ -195,7 +195,7 @@ class PostgreSqlJobApplicationIntegrationTest {
                 Integer.class
         );
 
-        assertThat(latestVersion).isEqualTo("8");
+        assertThat(latestVersion).isEqualTo("9");
         assertThat(versionColumnCount).isEqualTo(1);
     }
 
