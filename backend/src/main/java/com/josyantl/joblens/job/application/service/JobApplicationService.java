@@ -19,6 +19,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import com.josyantl.joblens.shared.application.ApplicationDataCleanup;
 
 @Service
 @RequiredArgsConstructor
@@ -27,6 +28,7 @@ public class JobApplicationService {
     private final JobApplicationRepository repository;
     private final JobApplicationStatusHistoryRepository statusHistoryRepository;
     private final CurrentUserProvider currentUser;
+    private final List<ApplicationDataCleanup> cleanupHandlers;
 
     @Transactional
     public JobApplication create(CreateJobApplicationCommand command) {
@@ -104,7 +106,9 @@ public class JobApplicationService {
     @Transactional
     public void delete(Long id) {
         getById(id);
-        repository.deleteById(id, currentUser.userId());
+        Long userId = currentUser.userId();
+        cleanupHandlers.forEach(handler -> handler.beforeApplicationDeleted(id, userId));
+        repository.deleteById(id, userId);
     }
 
     private JobApplication getById(Long id) {

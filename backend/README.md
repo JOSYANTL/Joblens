@@ -11,6 +11,7 @@ them, instead of creating empty controller, DTO, entity, and repository classes.
 ```text
 com.josyantl.joblens
 ├── BackendApplication
+├── document             # Application documents and storage adapters
 ├── identity             # Accounts, registration, and security adapters
 ├── notification         # In-app reminders and read-state management
 ├── shared               # Small cross-context application ports
@@ -34,6 +35,29 @@ implements those interfaces.
 
 Each new business area should follow the same bounded-context-first structure
 rather than adding another application-wide horizontal package.
+
+## Application documents
+
+Each job application can store private PDF or DOCX documents categorized as
+`RESUME`, `JOB_DESCRIPTION`, or `OTHER`. Files are limited to 10 MB and their
+content signature is checked instead of trusting only the supplied extension or
+media type. Metadata is stored in PostgreSQL while file content is accessed
+through a `DocumentStorage` application port.
+
+The default adapter stores content under the operating system temporary
+directory. Set `DOCUMENT_STORAGE_ROOT` to use a persistent local directory.
+This port can later be implemented by an S3 adapter without changing the domain
+or REST layer.
+
+| Method | Route | Purpose |
+| --- | --- | --- |
+| POST | `/api/applications/{applicationId}/documents` | Upload multipart fields `type` and `file` |
+| GET | `/api/applications/{applicationId}/documents` | List document metadata |
+| GET | `/api/applications/{applicationId}/documents/{documentId}/content` | Download content |
+| DELETE | `/api/applications/{applicationId}/documents/{documentId}` | Delete metadata and content |
+
+Documents are scoped to the signed-in owner. Deleting an application also
+removes its stored files. V9 creates the metadata table and ownership index.
 
 ## In-app notifications
 

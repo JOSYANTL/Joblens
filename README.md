@@ -22,6 +22,9 @@ tasks, and time-sensitive reminders.
 - **Follow-up tasks / 跟进任务** — Create deadlines, filter pending or overdue
   work, and complete, cancel, or reopen tasks / 创建带截止时间的任务，筛选待办或
   逾期任务，并支持完成、取消和重新打开。
+- **Document management / 文档管理** — Upload, download, categorize, and delete
+  private PDF or DOCX files for each application / 为每个职位申请上传、下载、分类和
+  删除私有 PDF 或 DOCX 文档。
 - **Notification center / 通知中心** — Receive in-app reminders for upcoming
   interviews, tasks due within 24 hours, and overdue tasks / 接收即将开始的面试、
   24 小时内到期任务和逾期任务提醒。
@@ -51,6 +54,7 @@ Spring Boot interfaces ──> application ──> domain
 Backend bounded contexts / 后端限界上下文：
 
 - `identity` — accounts and authentication / 账户与认证
+- `document` — application documents and replaceable storage adapters / 申请文档与可替换存储适配器
 - `job` — applications, interviews, and follow-up tasks / 职位申请、面试与跟进任务
 - `notification` — reminder generation and read-state management / 提醒生成与已读状态管理
 - `shared` — small cross-context application ports / 少量跨上下文应用端口
@@ -173,6 +177,7 @@ GitHub Actions 会在推送和 Pull Request 时运行后端测试、前端测试
 | Interviews / 面试 | `/api/interviews`, `/api/applications/{id}/interviews` |
 | Follow-up tasks / 跟进任务 | `/api/tasks`, `/api/applications/{id}/tasks` |
 | Notifications / 通知 | `/api/notifications` |
+| Documents / 文档 | `/api/applications/{id}/documents` |
 | Service health / 服务健康 | `/actuator/health` |
 
 State-changing requests require the current session cookie and CSRF token.
@@ -185,7 +190,7 @@ Detailed backend and frontend instructions are available in
 
 ## Roadmap / 后续计划
 
-- Resume and job-description document management / 简历与职位描述文档管理
+- S3 document-storage adapter / S3 文档存储适配器
 - AI-assisted matching and application insights / AI 匹配分析与申请洞察
 - Email or push notification delivery / 邮件或推送通知
 - Production deployment and observability / 生产部署与可观测性

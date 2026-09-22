@@ -21,6 +21,7 @@ export function NotificationsPage() {
   const query = useQuery({
     queryKey: ['notifications', page, unreadOnly],
     queryFn: () => notificationApi.list({ page, unreadOnly }),
+    refetchInterval: 5_000,
   });
   const refresh = () => {
     void queryClient.invalidateQueries({ queryKey: ['notifications'] });
@@ -56,4 +57,3 @@ export function NotificationsPage() {
     </QueryState>
   </Stack>;
 }
-

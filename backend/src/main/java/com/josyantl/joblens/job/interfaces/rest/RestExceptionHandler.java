@@ -10,6 +10,8 @@ import com.josyantl.joblens.job.application.exception.StaleJobApplicationVersion
 import com.josyantl.joblens.job.domain.exception.InvalidApplicationStatusTransitionException;
 import com.josyantl.joblens.identity.application.exception.EmailAlreadyRegisteredException;
 import com.josyantl.joblens.notification.application.exception.NotificationNotFoundException;
+import com.josyantl.joblens.document.application.exception.ApplicationDocumentNotFoundException;
+import com.josyantl.joblens.document.application.exception.DocumentStorageException;
 import jakarta.validation.ConstraintViolationException;
 import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.http.HttpStatus;
@@ -20,12 +22,36 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
 
 @RestControllerAdvice
 public class RestExceptionHandler {
+
+    @ExceptionHandler(ApplicationDocumentNotFoundException.class)
+    public ProblemDetail handleDocumentNotFound(ApplicationDocumentNotFoundException exception) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, exception.getMessage());
+        problem.setTitle("Application document not found");
+        return problem;
+    }
+
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    public ProblemDetail handleUploadTooLarge(MaxUploadSizeExceededException exception) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.PAYLOAD_TOO_LARGE,
+                "File must not exceed 10 MB");
+        problem.setTitle("File too large");
+        return problem;
+    }
+
+    @ExceptionHandler(DocumentStorageException.class)
+    public ProblemDetail handleDocumentStorage(DocumentStorageException exception) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.INTERNAL_SERVER_ERROR,
+                "The document storage operation failed");
+        problem.setTitle("Document storage unavailable");
+        return problem;
+    }
 
     @ExceptionHandler(NotificationNotFoundException.class)
     public ProblemDetail handleNotificationNotFound(NotificationNotFoundException exception) {
