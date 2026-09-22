@@ -33,6 +33,17 @@ test('authenticates users and keeps the application workflow private', async ({ 
     expect(applicationId).toBeGreaterThan(0);
     await expect(page.getByRole('heading', { name: company })).toBeVisible();
 
+    await page.locator('input[type="file"]').setInputFiles({
+      name: 'joblens-resume.pdf',
+      mimeType: 'application/pdf',
+      buffer: Buffer.from('%PDF-1.7\nJoblens E2E resume'),
+    });
+    await page.getByRole('button', { name: '上传' }).click();
+    await expect(page.getByText('joblens-resume.pdf')).toBeVisible();
+    const downloadPromise = page.waitForEvent('download');
+    await page.getByRole('link', { name: '下载' }).click();
+    expect((await downloadPromise).suggestedFilename()).toBe('joblens-resume.pdf');
+
     await page.getByRole('link', { name: '预约面试' }).click();
     await page.getByLabel(/开始时间/).fill(localDateTimeAfter(2));
     await page.getByRole('button', { name: '保存面试' }).click();

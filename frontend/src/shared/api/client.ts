@@ -87,6 +87,10 @@ export function sendJson<T>(path: string, method: 'POST' | 'PUT' | 'PATCH', body
   });
 }
 
+export function sendFormData<T>(path: string, form: FormData): Promise<T> {
+  return requestJson<T>(path, { method: 'POST', body: form });
+}
+
 export function deleteResource(path: string): Promise<void> {
   return requestJson<void>(path, { method: 'DELETE' });
 }

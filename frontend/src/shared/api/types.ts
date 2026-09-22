@@ -118,3 +118,16 @@ export interface UserNotification {
   readAt: string | null;
   targetUrl: string;
 }
+
+export type ApplicationDocumentType = 'RESUME' | 'JOB_DESCRIPTION' | 'OTHER';
+
+export interface ApplicationDocument {
+  id: number;
+  applicationId: number;
+  type: ApplicationDocumentType;
+  originalFileName: string;
+  contentType: string;
+  sizeBytes: number;
+  createdAt: string;
+  downloadUrl: string;
+}
