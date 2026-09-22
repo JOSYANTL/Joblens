@@ -32,24 +32,25 @@ local development.
 - `src/shared`: shared API helpers, types, components, and formatters / 通用 API、类型、组件及格式化工具
 - `tests`: frontend tests and test setup, kept separate from production code / 前端测试及其模拟环境，与业务代码分开
 
-The application provides dashboard, job application, document, interview,
+The application provides dashboard, job application, document, activity timeline, notes, interview,
 follow-up task, and notification-center pages. Job applications support creation, details,
 editing, deletion, and workflow-based status changes. Interviews can be
 scheduled, rescheduled, cancelled, completed, and supplemented with feedback.
 Follow-up tasks support filtering, editing, completion, cancellation, reopening,
 and deletion. Optimistic-lock conflicts can be resolved by reloading the latest
 record. Each application can upload, download, and delete private PDF or DOCX
-documents. The notification center shows interviews and tasks due within 24 hours,
+documents. Application details also provide versioned private notes and a filterable,
+paginated timeline of important changes. The notification center shows interviews and tasks due within 24 hours,
 as well as overdue tasks, with unread filtering, mark-all-read, deletion, and
 navigation to the related record. Production deployments must proxy same-origin
 `/api` requests to the backend.
 
-目前提供总览、职位申请、申请文档、面试安排、跟进任务和通知中心页面。职位申请支持创建、查看详情、
+目前提供总览、职位申请、申请文档、活动时间线、私有备注、面试安排、跟进任务和通知中心页面。职位申请支持创建、查看详情、
 编辑、删除与按后端允许的路径更新状态；编辑或状态更新遇到版本冲突时可重新加载最新数据。
 面试可从申请详情预约，在面试列表查看未来 7 天安排，进入详情改期、取消或完成，完成后可记录
 反馈。跟进任务可从申请详情创建，在任务列表按状态或逾期筛选，进入详情编辑、完成、取消、
 重新打开或删除。任务编辑、状态更新与删除遇到版本冲突时也可重新加载最新数据。每个职位申请
-可以上传、下载和删除私有的 PDF 或 DOCX 文档。通知中心
+可以上传、下载和删除私有的 PDF 或 DOCX 文档；申请详情还支持带版本保护的备注以及可筛选、分页的活动时间线。通知中心
 显示 24 小时内的面试、即将到期和已逾期任务提醒，支持未读筛选、全部已读、删除和跳转到
 相关记录。生产部署时需让同源 `/api` 请求转发到后端。
 

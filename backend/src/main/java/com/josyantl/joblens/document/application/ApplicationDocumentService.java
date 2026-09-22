@@ -8,6 +8,9 @@ import com.josyantl.joblens.job.application.exception.JobApplicationNotFoundExce
 import com.josyantl.joblens.job.domain.repository.JobApplicationRepository;
 import com.josyantl.joblens.shared.application.ApplicationDataCleanup;
 import com.josyantl.joblens.shared.application.CurrentUserProvider;
+import com.josyantl.joblens.shared.application.ApplicationActivityRecorder;
+import com.josyantl.joblens.shared.application.ApplicationActivitySubjectType;
+import com.josyantl.joblens.shared.application.ApplicationActivityType;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -34,6 +37,7 @@ public class ApplicationDocumentService implements ApplicationDataCleanup {
     private final JobApplicationRepository applications;
     private final DocumentStorage storage;
     private final CurrentUserProvider currentUser;
+    private final ApplicationActivityRecorder activityRecorder;
 
     @Transactional
     public ApplicationDocument upload(Long applicationId, ApplicationDocumentType type,
@@ -45,8 +49,12 @@ public class ApplicationDocumentService implements ApplicationDataCleanup {
         String storageKey = UUID.randomUUID().toString();
         storage.store(storageKey, content);
         try {
-            return documents.save(ApplicationDocument.create(userId, applicationId, type,
+            ApplicationDocument saved = documents.save(ApplicationDocument.create(userId, applicationId, type,
                     fileName, contentType, content.length, storageKey, Instant.now()));
+            activityRecorder.record(userId, applicationId, ApplicationActivityType.DOCUMENT_UPLOADED,
+                    ApplicationActivitySubjectType.DOCUMENT, saved.getId(),
+                    "上传了文档：" + saved.getOriginalFileName(), saved.getCreatedAt());
+            return saved;
         } catch (RuntimeException exception) {
             storage.delete(storageKey);
             throw exception;
@@ -77,6 +85,9 @@ public class ApplicationDocumentService implements ApplicationDataCleanup {
         requireParent(document, applicationId);
         documents.delete(document);
         storage.delete(document.getStorageKey());
+        activityRecorder.record(userId, applicationId, ApplicationActivityType.DOCUMENT_DELETED,
+                ApplicationActivitySubjectType.DOCUMENT, documentId,
+                "删除了文档：" + document.getOriginalFileName(), Instant.now());
     }
 
     @Override

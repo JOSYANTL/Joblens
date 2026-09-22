@@ -8,6 +8,9 @@ import com.josyantl.joblens.shared.application.CurrentUserProvider;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.time.Instant;
+import com.josyantl.joblens.shared.application.ApplicationActivityRecorder;
+import com.josyantl.joblens.shared.application.ApplicationActivitySubjectType;
+import com.josyantl.joblens.shared.application.ApplicationActivityType;
 
 @Service
 @RequiredArgsConstructor
@@ -16,11 +19,16 @@ public class FollowUpTaskService {
     private final FollowUpTaskRepository repository;
     private final JobApplicationRepository applications;
     private final CurrentUserProvider currentUser;
+    private final ApplicationActivityRecorder activityRecorder;
 
     @Transactional
     public FollowUpTask create(Long applicationId, String title, String notes, Instant dueAt) {
         requireApplication(applicationId);
-        return repository.save(FollowUpTask.create(applicationId, title, notes, dueAt, Instant.now()));
+        Instant now = Instant.now();
+        FollowUpTask saved = repository.save(FollowUpTask.create(applicationId, title, notes, dueAt, now));
+        activityRecorder.record(currentUser.userId(), applicationId, ApplicationActivityType.TASK_CREATED,
+                ApplicationActivitySubjectType.TASK, saved.getId(), "创建了跟进任务：" + saved.getTitle(), now);
+        return saved;
     }
 
     public FollowUpTask get(Long applicationId, Long taskId) {
@@ -39,8 +47,12 @@ public class FollowUpTaskService {
                                Instant dueAt, long version) {
         FollowUpTask task = get(applicationId, taskId);
         requireVersion(task, version);
-        task.update(title, notes, dueAt, Instant.now());
-        return repository.save(task);
+        Instant now = Instant.now();
+        task.update(title, notes, dueAt, now);
+        FollowUpTask saved = repository.save(task);
+        activityRecorder.record(currentUser.userId(), applicationId, ApplicationActivityType.TASK_UPDATED,
+                ApplicationActivitySubjectType.TASK, saved.getId(), "更新了跟进任务：" + saved.getTitle(), now);
+        return saved;
     }
 
     @Transactional
@@ -48,8 +60,16 @@ public class FollowUpTaskService {
                                      FollowUpTaskStatus status, long version) {
         FollowUpTask task = get(applicationId, taskId);
         requireVersion(task, version);
-        task.changeStatus(status, Instant.now());
-        return repository.save(task);
+        FollowUpTaskStatus previous = task.getStatus();
+        Instant now = Instant.now();
+        task.changeStatus(status, now);
+        FollowUpTask saved = repository.save(task);
+        if (previous != saved.getStatus())
+            activityRecorder.record(currentUser.userId(), applicationId,
+                    ApplicationActivityType.TASK_STATUS_CHANGED,
+                    ApplicationActivitySubjectType.TASK, saved.getId(),
+                    "任务状态从 " + previous + " 更新为 " + saved.getStatus(), now);
+        return saved;
     }
 
     @Transactional
@@ -57,6 +77,8 @@ public class FollowUpTaskService {
         FollowUpTask task = get(applicationId, taskId);
         requireVersion(task, version);
         repository.delete(task);
+        activityRecorder.record(currentUser.userId(), applicationId, ApplicationActivityType.TASK_DELETED,
+                ApplicationActivitySubjectType.TASK, taskId, "删除了跟进任务：" + task.getTitle(), Instant.now());
     }
 
     private void requireVersion(FollowUpTask task, long version) {

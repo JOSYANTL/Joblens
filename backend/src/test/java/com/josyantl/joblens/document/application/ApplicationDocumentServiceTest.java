@@ -4,6 +4,7 @@ import com.josyantl.joblens.document.domain.model.ApplicationDocument;
 import com.josyantl.joblens.document.domain.repository.ApplicationDocumentRepository;
 import com.josyantl.joblens.job.domain.repository.JobApplicationRepository;
 import com.josyantl.joblens.shared.application.CurrentUserProvider;
+import com.josyantl.joblens.shared.application.ApplicationActivityRecorder;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -32,6 +33,9 @@ class ApplicationDocumentServiceTest {
     @Mock
     private CurrentUserProvider currentUser;
 
+    @Mock
+    private ApplicationActivityRecorder activityRecorder;
+
     @Test
     void deletesStoredFilesAfterCommitWhenApplicationIsDeleted() {
         List<String> deletedKeys = new ArrayList<>();
@@ -59,7 +63,8 @@ class ApplicationDocumentServiceTest {
         when(second.getStorageKey()).thenReturn("cover-letter");
         when(documents.findAll(10L, 20L)).thenReturn(List.of(first, second));
 
-        ApplicationDocumentService service = new ApplicationDocumentService(documents, applications, storage, currentUser);
+        ApplicationDocumentService service = new ApplicationDocumentService(
+                documents, applications, storage, currentUser, activityRecorder);
 
         TransactionSynchronizationManager.initSynchronization();
         try {

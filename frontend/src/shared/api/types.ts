@@ -131,3 +131,30 @@ export interface ApplicationDocument {
   createdAt: string;
   downloadUrl: string;
 }
+
+export type ApplicationActivityType =
+  | 'APPLICATION_CREATED' | 'APPLICATION_UPDATED' | 'APPLICATION_STATUS_CHANGED'
+  | 'INTERVIEW_SCHEDULED' | 'INTERVIEW_RESCHEDULED' | 'INTERVIEW_STATUS_CHANGED'
+  | 'INTERVIEW_FEEDBACK_UPDATED' | 'TASK_CREATED' | 'TASK_UPDATED'
+  | 'TASK_STATUS_CHANGED' | 'TASK_DELETED' | 'DOCUMENT_UPLOADED'
+  | 'DOCUMENT_DELETED' | 'NOTE_CREATED' | 'NOTE_UPDATED' | 'NOTE_DELETED';
+
+export type ApplicationActivitySubjectType = 'APPLICATION' | 'INTERVIEW' | 'TASK' | 'DOCUMENT' | 'NOTE';
+
+export interface ApplicationActivity {
+  id: number;
+  type: ApplicationActivityType;
+  subjectType: ApplicationActivitySubjectType;
+  subjectId: number | null;
+  summary: string;
+  occurredAt: string;
+}
+
+export interface ApplicationNote {
+  id: number;
+  applicationId: number;
+  content: string;
+  createdAt: string;
+  updatedAt: string;
+  version: number;
+}

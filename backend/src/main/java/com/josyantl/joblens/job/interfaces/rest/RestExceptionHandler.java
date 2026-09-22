@@ -12,6 +12,8 @@ import com.josyantl.joblens.identity.application.exception.EmailAlreadyRegistere
 import com.josyantl.joblens.notification.application.exception.NotificationNotFoundException;
 import com.josyantl.joblens.document.application.exception.ApplicationDocumentNotFoundException;
 import com.josyantl.joblens.document.application.exception.DocumentStorageException;
+import com.josyantl.joblens.activity.application.exception.ApplicationNoteNotFoundException;
+import com.josyantl.joblens.activity.application.exception.StaleApplicationNoteVersionException;
 import jakarta.validation.ConstraintViolationException;
 import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.http.HttpStatus;
@@ -29,6 +31,18 @@ import java.util.Map;
 
 @RestControllerAdvice
 public class RestExceptionHandler {
+
+    @ExceptionHandler(ApplicationNoteNotFoundException.class)
+    public ProblemDetail handleNoteNotFound(ApplicationNoteNotFoundException exception) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, exception.getMessage());
+        problem.setTitle("Application note not found");
+        return problem;
+    }
+
+    @ExceptionHandler(StaleApplicationNoteVersionException.class)
+    public ProblemDetail handleNoteConflict(StaleApplicationNoteVersionException exception) {
+        return conflictProblem("Stale application note version", exception.getMessage());
+    }
 
     @ExceptionHandler(ApplicationDocumentNotFoundException.class)
     public ProblemDetail handleDocumentNotFound(ApplicationDocumentNotFoundException exception) {
