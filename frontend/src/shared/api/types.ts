@@ -95,3 +95,26 @@ export interface FollowUpTaskDetails {
   notes: string;
   dueAt: string;
 }
+
+export interface AuthUser {
+  id: number;
+  email: string;
+  displayName: string;
+}
+
+export type NotificationType = 'INTERVIEW_UPCOMING' | 'TASK_DUE_SOON' | 'TASK_OVERDUE';
+export type NotificationSourceType = 'INTERVIEW' | 'TASK';
+
+export interface UserNotification {
+  id: number;
+  applicationId: number;
+  type: NotificationType;
+  sourceType: NotificationSourceType;
+  sourceId: number;
+  title: string;
+  message: string;
+  eventAt: string;
+  createdAt: string;
+  readAt: string | null;
+  targetUrl: string;
+}

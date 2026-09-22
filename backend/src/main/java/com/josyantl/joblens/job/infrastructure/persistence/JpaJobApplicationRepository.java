@@ -12,6 +12,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.EnumMap;
 import java.util.List;
@@ -27,29 +28,29 @@ public class JpaJobApplicationRepository implements JobApplicationRepository {
     private final JobApplicationPersistenceMapper mapper;
 
     @Override
-    public JobApplication save(JobApplication application) {
-        JobApplicationJpaEntity savedEntity = springDataRepository.saveAndFlush(
-                mapper.toEntity(application)
-        );
+    public JobApplication save(JobApplication application, Long userId) {
+        JobApplicationJpaEntity entity = mapper.toEntity(application);
+        entity.setUserId(userId);
+        JobApplicationJpaEntity savedEntity = springDataRepository.saveAndFlush(entity);
         return mapper.toDomain(savedEntity);
     }
 
     @Override
-    public Optional<JobApplication> findById(Long id) {
-        return springDataRepository.findById(id)
+    public Optional<JobApplication> findById(Long id, Long userId) {
+        return springDataRepository.findByIdAndUserId(id, userId)
                 .map(mapper::toDomain);
     }
 
     @Override
-    public List<JobApplication> findAll() {
-        return springDataRepository.findAll()
+    public List<JobApplication> findAll(Long userId) {
+        return springDataRepository.findAllByUserId(userId)
                 .stream()
                 .map(mapper::toDomain)
                 .toList();
     }
 
     @Override
-    public JobApplicationPage search(JobApplicationSearchCriteria criteria) {
+    public JobApplicationPage search(JobApplicationSearchCriteria criteria, Long userId) {
         Sort.Direction direction = criteria.direction() == SortDirection.ASC
                 ? Sort.Direction.ASC
                 : Sort.Direction.DESC;
@@ -61,7 +62,7 @@ public class JpaJobApplicationRepository implements JobApplicationRepository {
                 sort
         );
         Page<JobApplicationJpaEntity> result = springDataRepository.findAll(
-                buildSpecification(criteria),
+                buildSpecification(criteria, userId),
                 pageable
         );
 
@@ -75,18 +76,18 @@ public class JpaJobApplicationRepository implements JobApplicationRepository {
     }
 
     @Override
-    public Map<ApplicationStatus, Long> countByStatus() {
+    public Map<ApplicationStatus, Long> countByStatus(Long userId) {
         EnumMap<ApplicationStatus, Long> counts = new EnumMap<>(ApplicationStatus.class);
-        springDataRepository.countGroupedByStatus()
+        springDataRepository.countGroupedByStatus(userId)
                 .forEach(row -> counts.put(row.getStatus(), row.getCount()));
         return counts;
     }
 
     private Specification<JobApplicationJpaEntity> buildSpecification(
-            JobApplicationSearchCriteria criteria
+            JobApplicationSearchCriteria criteria, Long userId
     ) {
         return (root, query, builder) -> {
-            var predicate = builder.conjunction();
+            var predicate = builder.equal(root.get("userId"), userId);
 
             if (criteria.status() != null) {
                 predicate = builder.and(
@@ -112,7 +113,8 @@ public class JpaJobApplicationRepository implements JobApplicationRepository {
     }
 
     @Override
-    public void deleteById(Long id) {
-        springDataRepository.deleteById(id);
+    @Transactional
+    public void deleteById(Long id, Long userId) {
+        springDataRepository.deleteByIdAndUserId(id, userId);
     }
 }

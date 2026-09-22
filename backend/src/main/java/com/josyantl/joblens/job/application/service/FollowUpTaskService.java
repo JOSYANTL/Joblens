@@ -4,6 +4,7 @@ import com.josyantl.joblens.job.application.exception.*;
 import com.josyantl.joblens.job.domain.model.*;
 import com.josyantl.joblens.job.domain.repository.*;
 import lombok.RequiredArgsConstructor;
+import com.josyantl.joblens.shared.application.CurrentUserProvider;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.time.Instant;
@@ -14,6 +15,7 @@ import java.time.Instant;
 public class FollowUpTaskService {
     private final FollowUpTaskRepository repository;
     private final JobApplicationRepository applications;
+    private final CurrentUserProvider currentUser;
 
     @Transactional
     public FollowUpTask create(Long applicationId, String title, String notes, Instant dueAt) {
@@ -29,7 +31,7 @@ public class FollowUpTaskService {
 
     public FollowUpTaskPage search(FollowUpTaskQuery query, Instant now) {
         if (query.applicationId() != null) requireApplication(query.applicationId());
-        return repository.search(query, now);
+        return repository.search(query, now, currentUser.userId());
     }
 
     @Transactional
@@ -62,6 +64,7 @@ public class FollowUpTaskService {
     }
 
     private void requireApplication(Long id) {
-        applications.findById(id).orElseThrow(() -> new JobApplicationNotFoundException(id));
+        applications.findById(id, currentUser.userId())
+                .orElseThrow(() -> new JobApplicationNotFoundException(id));
     }
 }

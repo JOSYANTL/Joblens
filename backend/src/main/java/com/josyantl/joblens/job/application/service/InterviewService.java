@@ -4,6 +4,7 @@ import com.josyantl.joblens.job.application.exception.*;
 import com.josyantl.joblens.job.domain.model.*;
 import com.josyantl.joblens.job.domain.repository.*;
 import lombok.RequiredArgsConstructor;
+import com.josyantl.joblens.shared.application.CurrentUserProvider;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.time.Instant;
@@ -14,6 +15,7 @@ import java.time.Instant;
 public class InterviewService {
     private final InterviewRepository repository;
     private final JobApplicationRepository applications;
+    private final CurrentUserProvider currentUser;
 
     @Transactional
     public Interview schedule(Long applicationId, InterviewDetails details) {
@@ -30,7 +32,7 @@ public class InterviewService {
 
     public InterviewPage search(InterviewQuery query) {
         if (query.applicationId() != null) requireApplication(query.applicationId());
-        return repository.search(query);
+        return repository.search(query, currentUser.userId());
     }
 
     @Transactional
@@ -58,7 +60,8 @@ public class InterviewService {
     }
 
     private void requireApplication(Long id) {
-        applications.findById(id).orElseThrow(() -> new JobApplicationNotFoundException(id));
+        applications.findById(id, currentUser.userId())
+                .orElseThrow(() -> new JobApplicationNotFoundException(id));
     }
 
     private void requireVersion(Interview interview, long version) {
