@@ -25,7 +25,12 @@ export default defineConfig({
       url: 'http://127.0.0.1:8080/actuator/health',
       timeout: 120_000,
       reuseExistingServer: !process.env.CI,
-      env: { ...process.env, DB_PASSWORD: process.env.DB_PASSWORD ?? 'joblens' },
+      env: {
+        ...process.env,
+        DB_PASSWORD: process.env.DB_PASSWORD ?? 'joblens',
+        NOTIFICATION_INITIAL_DELAY: 'PT1S',
+        NOTIFICATION_INTERVAL: 'PT1S',
+      },
       stdout: 'pipe',
       stderr: 'pipe',
     },

@@ -18,6 +18,7 @@ import com.josyantl.joblens.job.domain.repository.JobApplicationRepository;
 import com.josyantl.joblens.job.domain.repository.JobApplicationSearchCriteria;
 import com.josyantl.joblens.job.domain.repository.JobApplicationSortField;
 import com.josyantl.joblens.job.domain.repository.SortDirection;
+import com.josyantl.joblens.notification.domain.repository.ReminderCandidateRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -68,6 +69,29 @@ class PostgreSqlJobApplicationIntegrationTest {
 
     @Autowired
     private InterviewRepository interviews;
+
+    @Autowired
+    private ReminderCandidateRepository reminderCandidates;
+
+    @Test
+    void reminderCandidateQueriesBindInstantsInPostgres() {
+        var application = repository.save(JobApplication.create("Acme", "Engineer", "Java"), USER_ID);
+        var now = Instant.parse("2030-01-01T00:00:00Z");
+        interviews.save(Interview.schedule(application.getId(),
+                new InterviewDetails(2, InterviewType.VIDEO, now.plusSeconds(3600),
+                        45, "", "", ""), now));
+        tasks.save(FollowUpTask.create(application.getId(), "Prepare notes", "",
+                now.plusSeconds(7200), now));
+
+        assertThat(reminderCandidates.findUpcomingInterviews(now, now.plusSeconds(86400)))
+                .singleElement().satisfies(candidate -> {
+                    assertThat(candidate.userId()).isEqualTo(USER_ID);
+                    assertThat(candidate.applicationId()).isEqualTo(application.getId());
+        });
+        assertThat(reminderCandidates.findTasksDueSoon(now, now.plusSeconds(86400)))
+                .singleElement().satisfies(candidate -> assertThat(candidate.label()).isEqualTo("Prepare notes"));
+        assertThat(reminderCandidates.findOverdueTasks(now)).isEmpty();
+    }
 
     @Test
     void interviewsPersistFeedbackAndRejectConcurrentChangesInPostgres() {
@@ -171,7 +195,7 @@ class PostgreSqlJobApplicationIntegrationTest {
                 Integer.class
         );
 
-        assertThat(latestVersion).isEqualTo("7");
+        assertThat(latestVersion).isEqualTo("8");
         assertThat(versionColumnCount).isEqualTo(1);
     }
 

@@ -12,6 +12,7 @@ them, instead of creating empty controller, DTO, entity, and repository classes.
 com.josyantl.joblens
 ├── BackendApplication
 ├── identity             # Accounts, registration, and security adapters
+├── notification         # In-app reminders and read-state management
 ├── shared               # Small cross-context application ports
 └── job
     ├── domain          # Business concepts and rules; no Spring or persistence code
@@ -33,6 +34,27 @@ implements those interfaces.
 
 Each new business area should follow the same bounded-context-first structure
 rather than adding another application-wide horizontal package.
+
+## In-app notifications
+
+The backend periodically creates per-user notifications for scheduled interviews
+starting within 24 hours, pending tasks due within 24 hours, and overdue pending
+tasks. Generation starts one minute after application startup and repeats every
+15 minutes by default. It is idempotent: the same source event is not emitted
+twice. Override the ISO-8601 durations with `NOTIFICATION_INITIAL_DELAY` and
+`NOTIFICATION_INTERVAL` when needed.
+
+| Method | Route | Purpose |
+| --- | --- | --- |
+| GET | `/api/notifications` | List notifications; supports `unreadOnly`, `page`, and `size` |
+| GET | `/api/notifications/unread-count` | Read the current user's unread count |
+| PATCH | `/api/notifications/{id}/read` | Mark one notification as read |
+| PATCH | `/api/notifications/read-all` | Mark every notification as read |
+| DELETE | `/api/notifications/{id}` | Delete one notification |
+
+Notification queries and mutations are scoped to the signed-in user. Deleting
+an application cascades to its notifications. V8 creates the notification table,
+ownership indexes, and deduplication constraint automatically on startup.
 
 ## Run locally
 

@@ -34,7 +34,7 @@ test('authenticates users and keeps the application workflow private', async ({ 
     await expect(page.getByRole('heading', { name: company })).toBeVisible();
 
     await page.getByRole('link', { name: '预约面试' }).click();
-    await page.getByLabel(/开始时间/).fill(localDateTimeAfter(24));
+    await page.getByLabel(/开始时间/).fill(localDateTimeAfter(2));
     await page.getByRole('button', { name: '保存面试' }).click();
     await expect(page).toHaveURL(new RegExp(`/applications/${applicationId}/interviews/\\d+$`));
     await expect(page.getByRole('heading', { name: '面试详情' })).toBeVisible();
@@ -53,6 +53,12 @@ test('authenticates users and keeps the application workflow private', async ({ 
     await expect(page.getByText('任务状态已更新。')).toBeVisible();
     await expect(page.getByText('已完成', { exact: true })).toBeVisible();
     await expect(page.getByRole('button', { name: '重新打开' })).toBeVisible();
+
+    await page.goto('/notifications');
+    await expect(page.getByRole('heading', { name: '通知中心' })).toBeVisible();
+    await expect(page.getByText('面试即将开始', { exact: true })).toBeVisible({ timeout: 15_000 });
+    await page.getByRole('button', { name: '查看' }).click();
+    await expect(page).toHaveURL(new RegExp(`/applications/${applicationId}/interviews/\\d+$`));
 
     await page.getByRole('button', { name: '退出' }).click();
     await expect(page).toHaveURL('/login');
