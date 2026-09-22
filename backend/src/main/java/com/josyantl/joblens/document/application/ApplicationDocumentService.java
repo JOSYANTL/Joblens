@@ -88,17 +88,25 @@ public class ApplicationDocumentService implements ApplicationDataCleanup {
             storageKeys.add(document.getStorageKey());
         }
         if (storageKeys.isEmpty()) return;
+        if (!TransactionSynchronizationManager.isSynchronizationActive()) {
+            deleteStoredFiles(storageKeys);
+            return;
+        }
         TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
             @Override
             public void afterCommit() {
-                for (String storageKey : storageKeys) {
-                    try {
-                        storage.delete(storageKey);
-                    } catch (RuntimeException ignored) {
-                    }
-                }
+                deleteStoredFiles(storageKeys);
             }
         });
+    }
+
+    private void deleteStoredFiles(List<String> storageKeys) {
+        for (String storageKey : storageKeys) {
+            try {
+                storage.delete(storageKey);
+            } catch (RuntimeException ignored) {
+            }
+        }
     }
 
     private ApplicationDocument getDocument(Long id, Long userId) {
