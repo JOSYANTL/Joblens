@@ -11,6 +11,7 @@ them, instead of creating empty controller, DTO, entity, and repository classes.
 ```text
 com.josyantl.joblens
 ├── BackendApplication
+├── activity             # Application timeline and private notes
 ├── document             # Application documents and storage adapters
 ├── identity             # Accounts, registration, and security adapters
 ├── notification         # In-app reminders and read-state management
@@ -35,6 +36,26 @@ implements those interfaces.
 
 Each new business area should follow the same bounded-context-first structure
 rather than adding another application-wide horizontal package.
+
+## Activity timeline and notes
+
+Each application has owner-scoped notes and an append-only activity timeline.
+Application, interview, task, document, and note changes produce timeline
+events in the same database transaction as the business change. Activity lists
+are newest-first, paginated, and may be filtered by event type. Notes use
+optimistic locking, so stale updates or deletes return `409 Conflict`.
+
+| Method | Route | Purpose |
+| --- | --- | --- |
+| GET | `/api/applications/{applicationId}/activities` | List events with optional `type`, `page`, and `size` |
+| GET | `/api/applications/{applicationId}/notes` | List notes newest-first |
+| POST | `/api/applications/{applicationId}/notes` | Create a note |
+| PUT | `/api/applications/{applicationId}/notes/{noteId}` | Update note content and version |
+| DELETE | `/api/applications/{applicationId}/notes/{noteId}?version={version}` | Delete a versioned note |
+
+V10 creates both tables, their ownership indexes, and backfills a creation
+event for applications that already exist. Deleting an application cascades to
+its notes and events.
 
 ## Application documents
 

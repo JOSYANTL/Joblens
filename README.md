@@ -25,6 +25,10 @@ tasks, and time-sensitive reminders.
 - **Document management / 文档管理** — Upload, download, categorize, and delete
   private PDF or DOCX files for each application / 为每个职位申请上传、下载、分类和
   删除私有 PDF 或 DOCX 文档。
+- **Activity timeline and notes / 活动时间线与备注** — Keep private notes and
+  review a paginated, filterable audit trail of application, interview, task,
+  document, and note changes / 保存私有备注，并通过可分页、可筛选的时间线查看申请、
+  面试、任务、文档和备注变更。
 - **Notification center / 通知中心** — Receive in-app reminders for upcoming
   interviews, tasks due within 24 hours, and overdue tasks / 接收即将开始的面试、
   24 小时内到期任务和逾期任务提醒。
@@ -54,6 +58,7 @@ Spring Boot interfaces ──> application ──> domain
 Backend bounded contexts / 后端限界上下文：
 
 - `identity` — accounts and authentication / 账户与认证
+- `activity` — application timeline and private notes / 申请时间线与私有备注
 - `document` — application documents and replaceable storage adapters / 申请文档与可替换存储适配器
 - `job` — applications, interviews, and follow-up tasks / 职位申请、面试与跟进任务
 - `notification` — reminder generation and read-state management / 提醒生成与已读状态管理
@@ -178,6 +183,7 @@ GitHub Actions 会在推送和 Pull Request 时运行后端测试、前端测试
 | Follow-up tasks / 跟进任务 | `/api/tasks`, `/api/applications/{id}/tasks` |
 | Notifications / 通知 | `/api/notifications` |
 | Documents / 文档 | `/api/applications/{id}/documents` |
+| Activity and notes / 活动与备注 | `/api/applications/{id}/activities`, `/api/applications/{id}/notes` |
 | Service health / 服务健康 | `/actuator/health` |
 
 State-changing requests require the current session cookie and CSRF token.

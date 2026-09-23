@@ -40,12 +40,20 @@ export function ApplicationDocumentsCard({ applicationId, enabled }: { applicati
     onSuccess: async () => {
       setFile(null);
       setValidationError(null);
-      await queryClient.invalidateQueries({ queryKey: ['application-documents', applicationId] });
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['application-documents', applicationId] }),
+        queryClient.invalidateQueries({ queryKey: ['application-activities', applicationId] }),
+      ]);
     },
   });
   const remove = useMutation({
     mutationFn: (documentId: number) => documentApi.remove(applicationId, documentId),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['application-documents', applicationId] }),
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['application-documents', applicationId] }),
+        queryClient.invalidateQueries({ queryKey: ['application-activities', applicationId] }),
+      ]);
+    },
   });
 
   function submit() {
