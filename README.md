@@ -29,6 +29,9 @@ tasks, and time-sensitive reminders.
   review a paginated, filterable audit trail of application, interview, task,
   document, and note changes / 保存私有备注，并通过可分页、可筛选的时间线查看申请、
   面试、任务、文档和备注变更。
+- **Dashboard analytics / 数据总览** — Review application counts by status,
+  upcoming interviews, pending tasks, and recent activity across applications /
+  查看各状态申请数量、近期面试、待办任务和跨申请的最近活动。
 - **Notification center / 通知中心** — Receive in-app reminders for upcoming
   interviews, tasks due within 24 hours, and overdue tasks / 接收即将开始的面试、
   24 小时内到期任务和逾期任务提醒。
@@ -183,7 +186,7 @@ GitHub Actions 会在推送和 Pull Request 时运行后端测试、前端测试
 | Follow-up tasks / 跟进任务 | `/api/tasks`, `/api/applications/{id}/tasks` |
 | Notifications / 通知 | `/api/notifications` |
 | Documents / 文档 | `/api/applications/{id}/documents` |
-| Activity and notes / 活动与备注 | `/api/applications/{id}/activities`, `/api/applications/{id}/notes` |
+| Activity and notes / 活动与备注 | `/api/activities/recent`, `/api/applications/{id}/activities`, `/api/applications/{id}/notes` |
 | Service health / 服务健康 | `/actuator/health` |
 
 State-changing requests require the current session cookie and CSRF token.

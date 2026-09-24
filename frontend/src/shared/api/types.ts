@@ -143,6 +143,7 @@ export type ApplicationActivitySubjectType = 'APPLICATION' | 'INTERVIEW' | 'TASK
 
 export interface ApplicationActivity {
   id: number;
+  applicationId: number;
   type: ApplicationActivityType;
   subjectType: ApplicationActivitySubjectType;
   subjectId: number | null;

@@ -194,9 +194,17 @@ class PostgreSqlJobApplicationIntegrationTest {
                         + "AND column_name = 'version'",
                 Integer.class
         );
+        Integer recentActivityIndexCount = jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM pg_indexes "
+                        + "WHERE schemaname = 'public' "
+                        + "AND tablename = 'application_activity_events' "
+                        + "AND indexname = 'idx_application_activity_events_user_recent'",
+                Integer.class
+        );
 
-        assertThat(latestVersion).isEqualTo("10");
+        assertThat(latestVersion).isEqualTo("11");
         assertThat(versionColumnCount).isEqualTo(1);
+        assertThat(recentActivityIndexCount).isEqualTo(1);
     }
 
     @Test

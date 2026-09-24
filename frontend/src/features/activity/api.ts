@@ -2,6 +2,8 @@ import { deleteResource, getJson, sendJson } from '../../shared/api/client';
 import type { ApplicationActivity, ApplicationActivityType, ApplicationNote, Page } from '../../shared/api/types';
 
 export const activityApi = {
+  recent: (size = 8) =>
+    getJson<ApplicationActivity[]>('/api/activities/recent', { size }),
   list: (applicationId: number, params: { page: number; size?: number; type?: ApplicationActivityType }) =>
     getJson<Page<ApplicationActivity>>(`/api/applications/${applicationId}/activities`, {
       page: params.page, size: params.size ?? 10, type: params.type,

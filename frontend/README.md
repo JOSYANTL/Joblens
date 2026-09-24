@@ -32,7 +32,7 @@ local development.
 - `src/shared`: shared API helpers, types, components, and formatters / 通用 API、类型、组件及格式化工具
 - `tests`: frontend tests and test setup, kept separate from production code / 前端测试及其模拟环境，与业务代码分开
 
-The application provides dashboard, job application, document, activity timeline, notes, interview,
+The application provides a dashboard with status statistics and recent activity, plus job application, document, activity timeline, notes, interview,
 follow-up task, and notification-center pages. Job applications support creation, details,
 editing, deletion, and workflow-based status changes. Interviews can be
 scheduled, rescheduled, cancelled, completed, and supplemented with feedback.
@@ -45,7 +45,7 @@ as well as overdue tasks, with unread filtering, mark-all-read, deletion, and
 navigation to the related record. Production deployments must proxy same-origin
 `/api` requests to the backend.
 
-目前提供总览、职位申请、申请文档、活动时间线、私有备注、面试安排、跟进任务和通知中心页面。职位申请支持创建、查看详情、
+目前提供带状态统计和最近活动的总览，以及职位申请、申请文档、活动时间线、私有备注、面试安排、跟进任务和通知中心页面。职位申请支持创建、查看详情、
 编辑、删除与按后端允许的路径更新状态；编辑或状态更新遇到版本冲突时可重新加载最新数据。
 面试可从申请详情预约，在面试列表查看未来 7 天安排，进入详情改期、取消或完成，完成后可记录
 反馈。跟进任务可从申请详情创建，在任务列表按状态或逾期筛选，进入详情编辑、完成、取消、

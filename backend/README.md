@@ -44,9 +44,12 @@ Application, interview, task, document, and note changes produce timeline
 events in the same database transaction as the business change. Activity lists
 are newest-first, paginated, and may be filtered by event type. Notes use
 optimistic locking, so stale updates or deletes return `409 Conflict`.
+The dashboard feed uses the same owner-scoped events to show recent activity
+across all applications.
 
 | Method | Route | Purpose |
 | --- | --- | --- |
+| GET | `/api/activities/recent?size={size}` | List the current user's latest events across applications |
 | GET | `/api/applications/{applicationId}/activities` | List events with optional `type`, `page`, and `size` |
 | GET | `/api/applications/{applicationId}/notes` | List notes newest-first |
 | POST | `/api/applications/{applicationId}/notes` | Create a note |

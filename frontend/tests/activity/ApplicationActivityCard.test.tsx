@@ -12,7 +12,7 @@ describe('ApplicationActivityCard', () => {
   afterEach(() => vi.unstubAllGlobals());
   it('renders activity labels and context', async () => {
     const page: Page<ApplicationActivity> = {
-      content: [{ id: 1, type: 'APPLICATION_STATUS_CHANGED', subjectType: 'APPLICATION',
+      content: [{ id: 1, applicationId: 7, type: 'APPLICATION_STATUS_CHANGED', subjectType: 'APPLICATION',
         subjectId: 7, summary: '申请状态从 SAVED 更新为 APPLIED',
         occurredAt: '2030-01-01T00:00:00Z' }],
       page: 0, size: 10, totalElements: 1, totalPages: 1,

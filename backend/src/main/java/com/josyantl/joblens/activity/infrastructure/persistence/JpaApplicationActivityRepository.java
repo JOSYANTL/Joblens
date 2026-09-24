@@ -9,6 +9,8 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
+
 @Repository
 @RequiredArgsConstructor
 public class JpaApplicationActivityRepository implements ApplicationActivityRepository {
@@ -29,6 +31,15 @@ public class JpaApplicationActivityRepository implements ApplicationActivityRepo
                 : repository.findByUserIdAndApplicationIdAndType(userId, applicationId, type, pageable);
         return new ApplicationActivityPage(result.getContent().stream().map(this::toDomain).toList(),
                 result.getNumber(), result.getSize(), result.getTotalElements(), result.getTotalPages());
+    }
+
+    @Override
+    public List<ApplicationActivity> findRecent(Long userId, int size) {
+        var pageable = PageRequest.of(0, size,
+                Sort.by("occurredAt").descending().and(Sort.by("id").descending()));
+        return repository.findByUserId(userId, pageable).stream()
+                .map(this::toDomain)
+                .toList();
     }
 
     private ApplicationActivityJpaEntity toEntity(ApplicationActivity activity) {

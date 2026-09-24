@@ -8,6 +8,15 @@ afterEach(() => {
 });
 
 describe('activityApi', () => {
+  it('loads the recent activity feed with the requested size', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true, status: 200, json: async () => [] });
+    vi.stubGlobal('fetch', fetchMock);
+
+    await activityApi.recent(8);
+
+    expect(fetchMock).toHaveBeenCalledWith('/api/activities/recent?size=8', expect.anything());
+  });
+
   it('loads a filtered page and performs versioned note operations', async () => {
     document.cookie = 'XSRF-TOKEN=activity-csrf; path=/';
     const fetchMock = vi.fn()
