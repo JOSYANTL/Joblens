@@ -37,6 +37,20 @@ implements those interfaces.
 Each new business area should follow the same bounded-context-first structure
 rather than adding another application-wide horizontal package.
 
+## Dashboard analytics / 数据总览
+
+`GET /api/applications/analytics` returns the current user's application creation
+counts for the last 12 calendar weeks (Monday through Sunday, including this
+week) and cumulative conversion counts. An application is counted once at each
+stage it has reached: applied, interviewed, or offered. The conversion counts
+include applications that later moved to rejected, and exclude other users'
+applications. Rates are calculated by the frontend from these counts.
+
+`GET /api/applications/analytics` 返回当前用户最近 12 个自然周（周一至周日，
+包含本周）的新增申请数量，以及历史累计的转化阶段数量。每份申请在已投递、
+进入面试和获得 Offer 各阶段最多计数一次；之后被拒绝的申请仍计入此前到达的阶段。
+接口不包含其他用户的数据，转化率由前端根据这些数量计算。
+
 ## Activity timeline and notes
 
 Each application has owner-scoped notes and an append-only activity timeline.

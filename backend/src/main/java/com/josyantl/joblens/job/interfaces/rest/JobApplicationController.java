@@ -4,6 +4,7 @@ import com.josyantl.joblens.job.application.command.CreateJobApplicationCommand;
 import com.josyantl.joblens.job.application.command.UpdateJobApplicationCommand;
 import com.josyantl.joblens.job.application.command.UpdateJobApplicationStatusCommand;
 import com.josyantl.joblens.job.application.service.JobApplicationService;
+import com.josyantl.joblens.job.application.service.JobApplicationAnalyticsService;
 import com.josyantl.joblens.job.domain.model.ApplicationStatus;
 import com.josyantl.joblens.job.domain.model.JobApplication;
 import com.josyantl.joblens.job.domain.repository.JobApplicationSearchCriteria;
@@ -36,6 +37,7 @@ import java.util.List;
 public class JobApplicationController {
 
     private final JobApplicationService service;
+    private final JobApplicationAnalyticsService analyticsService;
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
@@ -89,6 +91,11 @@ public class JobApplicationController {
     @GetMapping("/statistics")
     public JobApplicationStatisticsResponse getStatistics() {
         return JobApplicationStatisticsResponse.from(service.getStatistics());
+    }
+
+    @GetMapping("/analytics")
+    public JobApplicationAnalyticsResponse getAnalytics() {
+        return JobApplicationAnalyticsResponse.from(analyticsService.getAnalytics());
     }
 
     @PutMapping("/{id}")
