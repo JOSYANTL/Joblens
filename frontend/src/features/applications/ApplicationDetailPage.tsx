@@ -14,6 +14,9 @@ import { interviewApi } from '../interviews/api';
 import { interviewStatusColors, interviewStatusLabels, interviewTypeLabels } from '../interviews/status';
 import { taskApi } from '../tasks/api';
 import { taskStatusColors, taskStatusLabels } from '../tasks/status';
+import { ApplicationDocumentsCard } from '../documents/ApplicationDocumentsCard';
+import { ApplicationNotesCard } from '../activity/ApplicationNotesCard';
+import { ApplicationActivityCard } from '../activity/ApplicationActivityCard';
 
 export function ApplicationDetailPage() {
   const { id: rawId } = useParams();
@@ -40,6 +43,8 @@ export function ApplicationDetailPage() {
         queryClient.invalidateQueries({ queryKey: ['application-status-history', id] }),
         queryClient.invalidateQueries({ queryKey: ['applications'] }),
         queryClient.invalidateQueries({ queryKey: ['application-statistics'] }),
+        queryClient.invalidateQueries({ queryKey: ['application-analytics'] }),
+        queryClient.invalidateQueries({ queryKey: ['application-activities', id] }),
       ]);
     },
   });
@@ -50,6 +55,7 @@ export function ApplicationDetailPage() {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ['applications'] }),
         queryClient.invalidateQueries({ queryKey: ['application-statistics'] }),
+        queryClient.invalidateQueries({ queryKey: ['application-analytics'] }),
         queryClient.invalidateQueries({ queryKey: ['application', id], exact: true, refetchType: 'none' }),
         queryClient.invalidateQueries({ queryKey: ['application-statuses', id], exact: true, refetchType: 'none' }),
         queryClient.invalidateQueries({ queryKey: ['application-status-history', id], exact: true, refetchType: 'none' }),
@@ -100,6 +106,9 @@ export function ApplicationDetailPage() {
         </Group>}
       </QueryState>
     </Card>
+    <ApplicationDocumentsCard applicationId={id} enabled={Boolean(application.data)} />
+    <ApplicationNotesCard applicationId={id} enabled={Boolean(application.data)} />
+    <ApplicationActivityCard applicationId={id} enabled={Boolean(application.data)} />
     <Card withBorder radius="lg" p="lg">
       <Title order={3} mb="md">状态历史</Title>
       <QueryState loading={history.isPending} error={history.error} empty={history.data?.length === 0}>

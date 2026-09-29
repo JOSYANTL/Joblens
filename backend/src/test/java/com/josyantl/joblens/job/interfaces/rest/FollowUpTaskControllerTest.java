@@ -4,30 +4,51 @@ import com.josyantl.joblens.job.application.command.CreateJobApplicationCommand;
 import com.josyantl.joblens.job.application.service.JobApplicationService;
 import com.josyantl.joblens.job.application.service.FollowUpTaskService;
 import com.josyantl.joblens.job.infrastructure.persistence.SpringDataJobApplicationRepository;
+import com.josyantl.joblens.identity.infrastructure.persistence.SpringDataUserAccountRepository;
+import com.josyantl.joblens.identity.infrastructure.persistence.UserAccountJpaEntity;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import java.time.Instant;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @SpringBootTest
 @AutoConfigureMockMvc
+@WithMockUser(username = "test@example.com")
 class FollowUpTaskControllerTest {
     @Autowired MockMvc mvc;
     @Autowired JobApplicationService applications;
     @Autowired FollowUpTaskService tasks;
     @Autowired SpringDataJobApplicationRepository repository;
+    @Autowired SpringDataUserAccountRepository userRepository;
     private Long applicationId;
 
     @BeforeEach
     void prepare() {
         repository.deleteAll();
+        ensureTestUser();
         applicationId = applications.create(new CreateJobApplicationCommand("Acme", "Engineer", "Java")).getId();
+    }
+
+    private void ensureTestUser() {
+        if (userRepository.existsByEmail("test@example.com")) return;
+        UserAccountJpaEntity user = new UserAccountJpaEntity();
+        user.setEmail("test@example.com");
+        user.setPasswordHash("{noop}test-password");
+        user.setDisplayName("Test User");
+        user.setEnabled(true);
+        user.setCreatedAt(Instant.now());
+        userRepository.saveAndFlush(user);
     }
 
     private String path(Long taskId) {
@@ -115,7 +136,8 @@ class FollowUpTaskControllerTest {
         mvc.perform(get("/api/tasks").param("dueFrom", "2020-01-01T00:00:00Z")
                 .param("dueTo", "2100-01-01T00:00:00Z"))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.totalElements").value(3));
-        applications.delete(applicationId);
+        mvc.perform(delete("/api/applications/{id}", applicationId))
+                .andExpect(status().isNoContent());
         mvc.perform(get("/api/tasks")).andExpect(jsonPath("$.totalElements").value(0));
     }
 
@@ -136,5 +158,25 @@ class FollowUpTaskControllerTest {
         mvc.perform(get("/api/tasks").param("dueFrom", "invalid")).andExpect(status().isBadRequest());
         mvc.perform(patch(path(id) + "/status").contentType(MediaType.APPLICATION_JSON)
                 .content("{\"status\":\"UNKNOWN\",\"version\":0}")).andExpect(status().isBadRequest());
+    }
+
+    private static MockHttpServletRequestBuilder post(String path, Object... uriVariables) {
+        return MockMvcRequestBuilders.post(path, uriVariables).with(user("test@example.com")).with(csrf());
+    }
+
+    private static MockHttpServletRequestBuilder put(String path, Object... uriVariables) {
+        return MockMvcRequestBuilders.put(path, uriVariables).with(user("test@example.com")).with(csrf());
+    }
+
+    private static MockHttpServletRequestBuilder patch(String path, Object... uriVariables) {
+        return MockMvcRequestBuilders.patch(path, uriVariables).with(user("test@example.com")).with(csrf());
+    }
+
+    private static MockHttpServletRequestBuilder delete(String path, Object... uriVariables) {
+        return MockMvcRequestBuilders.delete(path, uriVariables).with(user("test@example.com")).with(csrf());
+    }
+
+    private static MockHttpServletRequestBuilder get(String path, Object... uriVariables) {
+        return MockMvcRequestBuilders.get(path, uriVariables).with(user("test@example.com"));
     }
 }

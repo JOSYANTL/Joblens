@@ -1,5 +1,7 @@
 # Joblens Backend
 
+CI configuration and local reproduction steps: [Backend CI](../docs/backend-ci.md).
+
 Spring Boot backend organized around Domain-Driven Design (DDD). The initial
 structure is deliberately small: packages are added only when the domain needs
 them, instead of creating empty controller, DTO, entity, and repository classes.
@@ -9,6 +11,11 @@ them, instead of creating empty controller, DTO, entity, and repository classes.
 ```text
 com.josyantl.joblens
 ├── BackendApplication
+├── activity             # Application timeline and private notes
+├── document             # Application documents and storage adapters
+├── identity             # Accounts, registration, and security adapters
+├── notification         # In-app reminders and read-state management
+├── shared               # Small cross-context application ports
 └── job
     ├── domain          # Business concepts and rules; no Spring or persistence code
     ├── application     # Use cases and ports; coordinates the domain
@@ -29,6 +36,87 @@ implements those interfaces.
 
 Each new business area should follow the same bounded-context-first structure
 rather than adding another application-wide horizontal package.
+
+## Dashboard analytics / 数据总览
+
+`GET /api/applications/analytics` returns the current user's application creation
+counts for the last 12 calendar weeks (Monday through Sunday, including this
+week) and cumulative conversion counts. An application is counted once at each
+stage it has reached: applied, interviewed, or offered. The conversion counts
+include applications that later moved to rejected, and exclude other users'
+applications. Rates are calculated by the frontend from these counts.
+
+`GET /api/applications/analytics` 返回当前用户最近 12 个自然周（周一至周日，
+包含本周）的新增申请数量，以及历史累计的转化阶段数量。每份申请在已投递、
+进入面试和获得 Offer 各阶段最多计数一次；之后被拒绝的申请仍计入此前到达的阶段。
+接口不包含其他用户的数据，转化率由前端根据这些数量计算。
+
+## Activity timeline and notes
+
+Each application has owner-scoped notes and an append-only activity timeline.
+Application, interview, task, document, and note changes produce timeline
+events in the same database transaction as the business change. Activity lists
+are newest-first, paginated, and may be filtered by event type. Notes use
+optimistic locking, so stale updates or deletes return `409 Conflict`.
+The dashboard feed uses the same owner-scoped events to show recent activity
+across all applications.
+
+| Method | Route | Purpose |
+| --- | --- | --- |
+| GET | `/api/activities/recent?size={size}` | List the current user's latest events across applications |
+| GET | `/api/applications/{applicationId}/activities` | List events with optional `type`, `page`, and `size` |
+| GET | `/api/applications/{applicationId}/notes` | List notes newest-first |
+| POST | `/api/applications/{applicationId}/notes` | Create a note |
+| PUT | `/api/applications/{applicationId}/notes/{noteId}` | Update note content and version |
+| DELETE | `/api/applications/{applicationId}/notes/{noteId}?version={version}` | Delete a versioned note |
+
+V10 creates both tables, their ownership indexes, and backfills a creation
+event for applications that already exist. Deleting an application cascades to
+its notes and events.
+
+## Application documents
+
+Each job application can store private PDF or DOCX documents categorized as
+`RESUME`, `JOB_DESCRIPTION`, or `OTHER`. Files are limited to 10 MB and their
+content signature is checked instead of trusting only the supplied extension or
+media type. Metadata is stored in PostgreSQL while file content is accessed
+through a `DocumentStorage` application port.
+
+The default adapter stores content under the operating system temporary
+directory. Set `DOCUMENT_STORAGE_ROOT` to use a persistent local directory.
+This port can later be implemented by an S3 adapter without changing the domain
+or REST layer.
+
+| Method | Route | Purpose |
+| --- | --- | --- |
+| POST | `/api/applications/{applicationId}/documents` | Upload multipart fields `type` and `file` |
+| GET | `/api/applications/{applicationId}/documents` | List document metadata |
+| GET | `/api/applications/{applicationId}/documents/{documentId}/content` | Download content |
+| DELETE | `/api/applications/{applicationId}/documents/{documentId}` | Delete metadata and content |
+
+Documents are scoped to the signed-in owner. Deleting an application also
+removes its stored files. V9 creates the metadata table and ownership index.
+
+## In-app notifications
+
+The backend periodically creates per-user notifications for scheduled interviews
+starting within 24 hours, pending tasks due within 24 hours, and overdue pending
+tasks. Generation starts one minute after application startup and repeats every
+15 minutes by default. It is idempotent: the same source event is not emitted
+twice. Override the ISO-8601 durations with `NOTIFICATION_INITIAL_DELAY` and
+`NOTIFICATION_INTERVAL` when needed.
+
+| Method | Route | Purpose |
+| --- | --- | --- |
+| GET | `/api/notifications` | List notifications; supports `unreadOnly`, `page`, and `size` |
+| GET | `/api/notifications/unread-count` | Read the current user's unread count |
+| PATCH | `/api/notifications/{id}/read` | Mark one notification as read |
+| PATCH | `/api/notifications/read-all` | Mark every notification as read |
+| DELETE | `/api/notifications/{id}` | Delete one notification |
+
+Notification queries and mutations are scoped to the signed-in user. Deleting
+an application cascades to its notifications. V8 creates the notification table,
+ownership indexes, and deduplication constraint automatically on startup.
 
 ## Run locally
 
@@ -52,6 +140,30 @@ Check that the service and database are healthy:
 ```bash
 curl http://localhost:8080/actuator/health
 ```
+
+## Authentication and data isolation
+
+All application, interview, and task APIs require an authenticated session.
+Create an account or sign in through the frontend at `http://localhost:5173`.
+The backend stores only encoded passwords, uses an HttpOnly session cookie, and
+requires a CSRF token for every state-changing request. Each query is scoped to
+the current user, so an id owned by another account is returned as not found.
+
+The authentication endpoints are:
+
+| Method | Route | Purpose |
+| --- | --- | --- |
+| GET | `/api/auth/csrf` | Initialize a CSRF token and cookie |
+| POST | `/api/auth/register` | Create an account and start a session |
+| POST | `/api/auth/login` | Start a session |
+| GET | `/api/auth/me` | Read the current account |
+| POST | `/api/auth/logout` | End the session |
+
+For HTTPS deployments, set `SESSION_COOKIE_SECURE=true`. Local HTTP development
+uses the default `false`. API clients must retain both the `JOBLENS_SESSION` and
+`XSRF-TOKEN` cookies and send the CSRF value in the `X-XSRF-TOKEN` header for
+POST, PUT, PATCH, and DELETE requests. The curl examples below show business
+payloads only; add those session and CSRF values when calling them directly.
 
 Create and search job applications:
 
@@ -212,9 +324,8 @@ work. Encode the plus sign as `%2B` when putting a positive offset in a query UR
 V5 creates the task table and indexes automatically on startup. This feature
 provides task tracking and queries, not background email or push reminders.
 
-The project is still a local, single-user backend without authentication; checking
-the parent application id prevents accidental cross-application edits but does
-not implement user authorization.
+Follow-up tasks are authorized through their parent application and are visible
+only to that application's owner.
 
 ## Interview scheduling and feedback
 

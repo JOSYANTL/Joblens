@@ -24,6 +24,11 @@ export interface ApplicationStatistics {
   byStatus: Partial<Record<ApplicationStatus, number>>;
 }
 
+export interface ApplicationAnalytics {
+  weeklyApplications: { weekStart: string; count: number }[];
+  conversion: { applied: number; interviewed: number; offered: number };
+}
+
 export interface AvailableApplicationStatuses {
   currentStatus: ApplicationStatus;
   availableStatuses: ApplicationStatus[];
@@ -94,4 +99,68 @@ export interface FollowUpTaskDetails {
   title: string;
   notes: string;
   dueAt: string;
+}
+
+export interface AuthUser {
+  id: number;
+  email: string;
+  displayName: string;
+}
+
+export type NotificationType = 'INTERVIEW_UPCOMING' | 'TASK_DUE_SOON' | 'TASK_OVERDUE';
+export type NotificationSourceType = 'INTERVIEW' | 'TASK';
+
+export interface UserNotification {
+  id: number;
+  applicationId: number;
+  type: NotificationType;
+  sourceType: NotificationSourceType;
+  sourceId: number;
+  title: string;
+  message: string;
+  eventAt: string;
+  createdAt: string;
+  readAt: string | null;
+  targetUrl: string;
+}
+
+export type ApplicationDocumentType = 'RESUME' | 'JOB_DESCRIPTION' | 'OTHER';
+
+export interface ApplicationDocument {
+  id: number;
+  applicationId: number;
+  type: ApplicationDocumentType;
+  originalFileName: string;
+  contentType: string;
+  sizeBytes: number;
+  createdAt: string;
+  downloadUrl: string;
+}
+
+export type ApplicationActivityType =
+  | 'APPLICATION_CREATED' | 'APPLICATION_UPDATED' | 'APPLICATION_STATUS_CHANGED'
+  | 'INTERVIEW_SCHEDULED' | 'INTERVIEW_RESCHEDULED' | 'INTERVIEW_STATUS_CHANGED'
+  | 'INTERVIEW_FEEDBACK_UPDATED' | 'TASK_CREATED' | 'TASK_UPDATED'
+  | 'TASK_STATUS_CHANGED' | 'TASK_DELETED' | 'DOCUMENT_UPLOADED'
+  | 'DOCUMENT_DELETED' | 'NOTE_CREATED' | 'NOTE_UPDATED' | 'NOTE_DELETED';
+
+export type ApplicationActivitySubjectType = 'APPLICATION' | 'INTERVIEW' | 'TASK' | 'DOCUMENT' | 'NOTE';
+
+export interface ApplicationActivity {
+  id: number;
+  applicationId: number;
+  type: ApplicationActivityType;
+  subjectType: ApplicationActivitySubjectType;
+  subjectId: number | null;
+  summary: string;
+  occurredAt: string;
+}
+
+export interface ApplicationNote {
+  id: number;
+  applicationId: number;
+  content: string;
+  createdAt: string;
+  updatedAt: string;
+  version: number;
 }

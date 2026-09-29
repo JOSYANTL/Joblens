@@ -26,3 +26,4 @@ Object.defineProperty(document, 'fonts', {
   value: { addEventListener: vi.fn(), removeEventListener: vi.fn() },
 });
 Element.prototype.scrollIntoView = vi.fn();
+document.cookie = 'XSRF-TOKEN=test-csrf-token; path=/';

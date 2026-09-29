@@ -8,6 +8,12 @@ import com.josyantl.joblens.job.application.exception.FollowUpTaskNotFoundExcept
 import com.josyantl.joblens.job.application.exception.FollowUpTaskConflictException;
 import com.josyantl.joblens.job.application.exception.StaleJobApplicationVersionException;
 import com.josyantl.joblens.job.domain.exception.InvalidApplicationStatusTransitionException;
+import com.josyantl.joblens.identity.application.exception.EmailAlreadyRegisteredException;
+import com.josyantl.joblens.notification.application.exception.NotificationNotFoundException;
+import com.josyantl.joblens.document.application.exception.ApplicationDocumentNotFoundException;
+import com.josyantl.joblens.document.application.exception.DocumentStorageException;
+import com.josyantl.joblens.activity.application.exception.ApplicationNoteNotFoundException;
+import com.josyantl.joblens.activity.application.exception.StaleApplicationNoteVersionException;
 import jakarta.validation.ConstraintViolationException;
 import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.http.HttpStatus;
@@ -17,12 +23,69 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
 
 @RestControllerAdvice
 public class RestExceptionHandler {
+
+    @ExceptionHandler(ApplicationNoteNotFoundException.class)
+    public ProblemDetail handleNoteNotFound(ApplicationNoteNotFoundException exception) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, exception.getMessage());
+        problem.setTitle("Application note not found");
+        return problem;
+    }
+
+    @ExceptionHandler(StaleApplicationNoteVersionException.class)
+    public ProblemDetail handleNoteConflict(StaleApplicationNoteVersionException exception) {
+        return conflictProblem("Stale application note version", exception.getMessage());
+    }
+
+    @ExceptionHandler(ApplicationDocumentNotFoundException.class)
+    public ProblemDetail handleDocumentNotFound(ApplicationDocumentNotFoundException exception) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, exception.getMessage());
+        problem.setTitle("Application document not found");
+        return problem;
+    }
+
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    public ProblemDetail handleUploadTooLarge(MaxUploadSizeExceededException exception) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.PAYLOAD_TOO_LARGE,
+                "File must not exceed 10 MB");
+        problem.setTitle("File too large");
+        return problem;
+    }
+
+    @ExceptionHandler(DocumentStorageException.class)
+    public ProblemDetail handleDocumentStorage(DocumentStorageException exception) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.INTERNAL_SERVER_ERROR,
+                "The document storage operation failed");
+        problem.setTitle("Document storage unavailable");
+        return problem;
+    }
+
+    @ExceptionHandler(NotificationNotFoundException.class)
+    public ProblemDetail handleNotificationNotFound(NotificationNotFoundException exception) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, exception.getMessage());
+        problem.setTitle("Notification not found");
+        return problem;
+    }
+
+    @ExceptionHandler(BadCredentialsException.class)
+    public ProblemDetail handleBadCredentials(BadCredentialsException exception) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(
+                HttpStatus.UNAUTHORIZED, "Invalid email or password");
+        problem.setTitle("Authentication failed");
+        return problem;
+    }
+
+    @ExceptionHandler(EmailAlreadyRegisteredException.class)
+    public ProblemDetail handleDuplicateEmail(EmailAlreadyRegisteredException exception) {
+        return conflictProblem("Email already registered", exception.getMessage());
+    }
 
     @ExceptionHandler(InterviewNotFoundException.class)
     public ProblemDetail handleInterviewNotFound(InterviewNotFoundException exception) {

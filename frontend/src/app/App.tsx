@@ -1,7 +1,9 @@
-import { AppShell, Box, Burger, Center, Group, Loader, NavLink, Text, Title } from '@mantine/core';
+import { AppShell, Box, Burger, Button, Center, Group, Loader, NavLink, Text, Title } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { NavLink as RouterLink, Navigate, Route, Routes, useLocation } from 'react-router';
 import { lazy, Suspense } from 'react';
+import { useAuth } from '../features/auth/AuthContext';
+import { NotificationButton } from '../features/notifications/NotificationButton';
 
 const DashboardPage = lazy(() => import('../features/dashboard/DashboardPage').then((module) => ({ default: module.DashboardPage })));
 const ApplicationsPage = lazy(() => import('../features/applications/ApplicationsPage').then((module) => ({ default: module.ApplicationsPage })));
@@ -16,12 +18,16 @@ const TasksPage = lazy(() => import('../features/tasks/TasksPage').then((module)
 const CreateTaskPage = lazy(() => import('../features/tasks/CreateTaskPage').then((module) => ({ default: module.CreateTaskPage })));
 const EditTaskPage = lazy(() => import('../features/tasks/EditTaskPage').then((module) => ({ default: module.EditTaskPage })));
 const TaskDetailPage = lazy(() => import('../features/tasks/TaskDetailPage').then((module) => ({ default: module.TaskDetailPage })));
+const LoginPage = lazy(() => import('../features/auth/LoginPage').then((module) => ({ default: module.LoginPage })));
+const RegisterPage = lazy(() => import('../features/auth/RegisterPage').then((module) => ({ default: module.RegisterPage })));
+const NotificationsPage = lazy(() => import('../features/notifications/NotificationsPage').then((module) => ({ default: module.NotificationsPage })));
 
 const navigation = [
   { label: '总览', path: '/', mark: '01' },
   { label: '职位申请', path: '/applications', mark: '02' },
   { label: '面试安排', path: '/interviews', mark: '03' },
   { label: '跟进任务', path: '/tasks', mark: '04' },
+  { label: '通知中心', path: '/notifications', mark: '05' },
 ];
 
 export function App() {
@@ -29,6 +35,14 @@ export function App() {
   const location = useLocation();
   const inInterviewFlow = location.pathname.includes('/interviews');
   const inTaskFlow = location.pathname.includes('/tasks');
+  const auth = useAuth();
+
+  if (auth.loading) return <Center mih="100vh"><Loader /></Center>;
+  if (!auth.user) return <Suspense fallback={<Center mih="100vh"><Loader /></Center>}><Routes>
+    <Route path="/login" element={<LoginPage />} />
+    <Route path="/register" element={<RegisterPage />} />
+    <Route path="*" element={<Navigate to="/login" replace state={{ from: location.pathname + location.search }} />} />
+  </Routes></Suspense>;
 
   return (
     <AppShell
@@ -41,7 +55,9 @@ export function App() {
           <Burger opened={opened} onClick={toggle} hiddenFrom="sm" size="sm" />
           <Box className="brand-mark">J</Box>
           <Title order={3} size="h4">Joblens</Title>
-          <Text c="dimmed" size="sm" ml="auto" visibleFrom="sm">让每一步求职进展都清晰可见</Text>
+          <Text c="dimmed" size="sm" ml="auto" visibleFrom="sm">{auth.user.displayName}</Text>
+          <NotificationButton />
+          <Button variant="subtle" size="sm" onClick={() => void auth.logout()}>退出</Button>
         </Group>
       </AppShell.Header>
       <AppShell.Navbar p="md">
@@ -78,9 +94,12 @@ export function App() {
               <Route path="/applications/:applicationId/interviews/:interviewId" element={<InterviewDetailPage />} />
               <Route path="/interviews" element={<InterviewsPage />} />
               <Route path="/tasks" element={<TasksPage />} />
+              <Route path="/notifications" element={<NotificationsPage />} />
               <Route path="/applications/:applicationId/tasks/new" element={<CreateTaskPage />} />
               <Route path="/applications/:applicationId/tasks/:taskId/edit" element={<EditTaskPage />} />
               <Route path="/applications/:applicationId/tasks/:taskId" element={<TaskDetailPage />} />
+              <Route path="/login" element={<Navigate to="/" replace />} />
+              <Route path="/register" element={<Navigate to="/" replace />} />
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </Suspense>

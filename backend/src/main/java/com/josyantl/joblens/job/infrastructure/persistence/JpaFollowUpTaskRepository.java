@@ -8,6 +8,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Repository;
+import jakarta.persistence.criteria.Subquery;
 import java.time.Instant;
 import java.util.Optional;
 
@@ -25,9 +26,13 @@ public class JpaFollowUpTaskRepository implements FollowUpTaskRepository {
         return repository.findById(id).map(mapper::toDomain);
     }
 
-    public FollowUpTaskPage search(FollowUpTaskQuery criteria, Instant now) {
+    public FollowUpTaskPage search(FollowUpTaskQuery criteria, Instant now, Long userId) {
         Specification<FollowUpTaskJpaEntity> specification = (root, query, cb) -> {
-            var predicate = cb.conjunction();
+            Subquery<Long> ownedApplications = query.subquery(Long.class);
+            var application = ownedApplications.from(JobApplicationJpaEntity.class);
+            ownedApplications.select(application.get("id"))
+                    .where(cb.equal(application.get("userId"), userId));
+            var predicate = root.get("applicationId").in(ownedApplications);
             if (criteria.applicationId() != null)
                 predicate = cb.and(predicate, cb.equal(root.get("applicationId"), criteria.applicationId()));
             if (criteria.status() != null)

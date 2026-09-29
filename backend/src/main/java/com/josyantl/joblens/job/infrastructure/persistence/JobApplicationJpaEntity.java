@@ -18,6 +18,9 @@ public class JobApplicationJpaEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(name = "user_id", nullable = false)
+    private Long userId;
+
     @Column(nullable = false, length = 150)
     private String company;
 

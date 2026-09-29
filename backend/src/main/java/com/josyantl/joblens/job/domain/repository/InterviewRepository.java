@@ -6,5 +6,5 @@ import java.util.Optional;
 public interface InterviewRepository {
     Interview save(Interview interview);
     Optional<Interview> findById(Long id);
-    InterviewPage search(InterviewQuery query);
+    InterviewPage search(InterviewQuery query, Long userId);
 }

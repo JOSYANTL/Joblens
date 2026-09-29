@@ -7,6 +7,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Repository;
+import jakarta.persistence.criteria.Subquery;
 import java.util.Optional;
 
 @Repository
@@ -26,9 +27,13 @@ public class JpaInterviewRepository implements InterviewRepository {
     }
 
     @Override
-    public InterviewPage search(InterviewQuery criteria) {
+    public InterviewPage search(InterviewQuery criteria, Long userId) {
         Specification<InterviewJpaEntity> specification = (root, query, cb) -> {
-            var predicate = cb.conjunction();
+            Subquery<Long> ownedApplications = query.subquery(Long.class);
+            var application = ownedApplications.from(JobApplicationJpaEntity.class);
+            ownedApplications.select(application.get("id"))
+                    .where(cb.equal(application.get("userId"), userId));
+            var predicate = root.get("applicationId").in(ownedApplications);
             if (criteria.applicationId() != null)
                 predicate = cb.and(predicate, cb.equal(root.get("applicationId"), criteria.applicationId()));
             if (criteria.status() != null)

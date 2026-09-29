@@ -1,28 +1,42 @@
 package com.josyantl.joblens.job.interfaces.rest;
 
 import com.josyantl.joblens.job.domain.model.ApplicationStatus;
+import com.josyantl.joblens.identity.infrastructure.persistence.SpringDataUserAccountRepository;
+import com.josyantl.joblens.identity.infrastructure.persistence.UserAccountJpaEntity;
 import com.josyantl.joblens.job.infrastructure.persistence.JobApplicationJpaEntity;
 import com.josyantl.joblens.job.infrastructure.persistence.SpringDataJobApplicationRepository;
+import com.josyantl.joblens.job.infrastructure.persistence.SpringDataJobApplicationStatusHistoryRepository;
+import com.josyantl.joblens.job.infrastructure.persistence.JobApplicationStatusHistoryJpaEntity;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 
 import java.time.LocalDateTime;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.DayOfWeek;
+import java.time.temporal.TemporalAdjusters;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @SpringBootTest
 @AutoConfigureMockMvc
+@WithMockUser(username = "test@example.com")
 class JobApplicationControllerTest {
 
     @Autowired
@@ -31,9 +45,18 @@ class JobApplicationControllerTest {
     @Autowired
     private SpringDataJobApplicationRepository springDataRepository;
 
+    @Autowired
+    private SpringDataUserAccountRepository userRepository;
+
+    @Autowired
+    private SpringDataJobApplicationStatusHistoryRepository historyRepository;
+
+    private Long userId;
+
     @BeforeEach
     void clearDatabase() {
         springDataRepository.deleteAll();
+        userId = ensureTestUser().getId();
     }
 
     @Test
@@ -334,6 +357,45 @@ class JobApplicationControllerTest {
     }
 
     @Test
+    void returnsWeeklyTrendAndHistoricalConversionForCurrentUser() throws Exception {
+        LocalDate thisWeek = LocalDate.now().with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
+        JobApplicationJpaEntity offered = saveJobApplication("Offer Co", "Engineer", ApplicationStatus.OFFERED);
+        JobApplicationJpaEntity rejected = saveJobApplication("Rejected Co", "Engineer", ApplicationStatus.REJECTED);
+        JobApplicationJpaEntity saved = saveJobApplication("Saved Co", "Engineer", ApplicationStatus.SAVED);
+        rejected.setCreatedAt(thisWeek.minusWeeks(1).atTime(12, 0));
+        springDataRepository.saveAndFlush(rejected);
+        saved.setCreatedAt(thisWeek.minusWeeks(12).atTime(12, 0));
+        springDataRepository.saveAndFlush(saved);
+        JobApplicationStatusHistoryJpaEntity interviewHistory = new JobApplicationStatusHistoryJpaEntity();
+        interviewHistory.setJobApplicationId(rejected.getId());
+        interviewHistory.setFromStatus(ApplicationStatus.APPLIED);
+        interviewHistory.setToStatus(ApplicationStatus.INTERVIEW_SCHEDULED);
+        interviewHistory.setChangedAt(LocalDateTime.now());
+        historyRepository.saveAndFlush(interviewHistory);
+
+        UserAccountJpaEntity other = new UserAccountJpaEntity();
+        other.setEmail("analytics-other@example.com");
+        other.setPasswordHash("{noop}test-password");
+        other.setDisplayName("Other User");
+        other.setEnabled(true);
+        other.setCreatedAt(Instant.now());
+        Long otherId = userRepository.saveAndFlush(other).getId();
+        JobApplicationJpaEntity privateApplication = saveJobApplication("Private Co", "Engineer", ApplicationStatus.OFFERED);
+        privateApplication.setUserId(otherId);
+        springDataRepository.saveAndFlush(privateApplication);
+
+        mockMvc.perform(get("/api/applications/analytics"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.weeklyApplications.length()").value(12))
+                .andExpect(jsonPath("$.weeklyApplications[10].weekStart").value(thisWeek.minusWeeks(1).toString()))
+                .andExpect(jsonPath("$.weeklyApplications[10].count").value(1))
+                .andExpect(jsonPath("$.weeklyApplications[11].count").value(1))
+                .andExpect(jsonPath("$.conversion.applied").value(2))
+                .andExpect(jsonPath("$.conversion.interviewed").value(2))
+                .andExpect(jsonPath("$.conversion.offered").value(1));
+    }
+
+    @Test
     void rejectsStaleVersionWithoutOverwritingCurrentData() throws Exception {
         JobApplicationJpaEntity application = saveJobApplication();
 
@@ -408,6 +470,39 @@ class JobApplicationControllerTest {
         application.setStatus(status);
         application.setCreatedAt(now);
         application.setUpdatedAt(now);
+        application.setUserId(userId);
         return springDataRepository.save(application);
+    }
+
+    private UserAccountJpaEntity ensureTestUser() {
+        return userRepository.findByEmail("test@example.com").orElseGet(() -> {
+            UserAccountJpaEntity user = new UserAccountJpaEntity();
+            user.setEmail("test@example.com");
+            user.setPasswordHash("{noop}test-password");
+            user.setDisplayName("Test User");
+            user.setEnabled(true);
+            user.setCreatedAt(Instant.now());
+            return userRepository.saveAndFlush(user);
+        });
+    }
+
+    private static MockHttpServletRequestBuilder post(String path, Object... uriVariables) {
+        return MockMvcRequestBuilders.post(path, uriVariables).with(user("test@example.com")).with(csrf());
+    }
+
+    private static MockHttpServletRequestBuilder put(String path, Object... uriVariables) {
+        return MockMvcRequestBuilders.put(path, uriVariables).with(user("test@example.com")).with(csrf());
+    }
+
+    private static MockHttpServletRequestBuilder patch(String path, Object... uriVariables) {
+        return MockMvcRequestBuilders.patch(path, uriVariables).with(user("test@example.com")).with(csrf());
+    }
+
+    private static MockHttpServletRequestBuilder delete(String path, Object... uriVariables) {
+        return MockMvcRequestBuilders.delete(path, uriVariables).with(user("test@example.com")).with(csrf());
+    }
+
+    private static MockHttpServletRequestBuilder get(String path, Object... uriVariables) {
+        return MockMvcRequestBuilders.get(path, uriVariables).with(user("test@example.com"));
     }
 }

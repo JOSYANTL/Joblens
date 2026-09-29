@@ -9,15 +9,15 @@ import java.util.Optional;
 
 public interface JobApplicationRepository {
 
-    JobApplication save(JobApplication application);
+    JobApplication save(JobApplication application, Long userId);
 
-    Optional<JobApplication> findById(Long id);
+    Optional<JobApplication> findById(Long id, Long userId);
 
-    List<JobApplication> findAll();
+    List<JobApplication> findAll(Long userId);
 
-    JobApplicationPage search(JobApplicationSearchCriteria criteria);
+    JobApplicationPage search(JobApplicationSearchCriteria criteria, Long userId);
 
-    Map<ApplicationStatus, Long> countByStatus();
+    Map<ApplicationStatus, Long> countByStatus(Long userId);
 
-    void deleteById(Long id);
+    void deleteById(Long id, Long userId);
 }
