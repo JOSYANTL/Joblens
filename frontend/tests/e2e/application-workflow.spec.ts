@@ -33,6 +33,12 @@ test('authenticates users and keeps the application workflow private', async ({ 
     expect(applicationId).toBeGreaterThan(0);
     await expect(page.getByRole('heading', { name: company })).toBeVisible();
 
+    await page.goto('/');
+    await expect(page.getByRole('img', { name: /最近 12 周每周新增申请数量/ })).toBeVisible();
+    await expect(page.getByRole('heading', { name: '申请转化' })).toBeVisible();
+    await expect(page.getByText('0%')).toHaveCount(2);
+    await page.goto(`/applications/${applicationId}`);
+
     await page.locator('input[type="file"]').setInputFiles({
       name: 'joblens-resume.pdf',
       mimeType: 'application/pdf',

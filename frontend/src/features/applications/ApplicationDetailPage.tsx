@@ -43,6 +43,7 @@ export function ApplicationDetailPage() {
         queryClient.invalidateQueries({ queryKey: ['application-status-history', id] }),
         queryClient.invalidateQueries({ queryKey: ['applications'] }),
         queryClient.invalidateQueries({ queryKey: ['application-statistics'] }),
+        queryClient.invalidateQueries({ queryKey: ['application-analytics'] }),
         queryClient.invalidateQueries({ queryKey: ['application-activities', id] }),
       ]);
     },
@@ -54,6 +55,7 @@ export function ApplicationDetailPage() {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ['applications'] }),
         queryClient.invalidateQueries({ queryKey: ['application-statistics'] }),
+        queryClient.invalidateQueries({ queryKey: ['application-analytics'] }),
         queryClient.invalidateQueries({ queryKey: ['application', id], exact: true, refetchType: 'none' }),
         queryClient.invalidateQueries({ queryKey: ['application-statuses', id], exact: true, refetchType: 'none' }),
         queryClient.invalidateQueries({ queryKey: ['application-status-history', id], exact: true, refetchType: 'none' }),

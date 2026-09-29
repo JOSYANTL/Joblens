@@ -11,6 +11,7 @@ import { interviewTypeLabels } from '../interviews/status';
 import { taskApi } from '../tasks/api';
 import { activityApi } from '../activity/api';
 import { activityTypeLabels } from '../activity/labels';
+import { ApplicationAnalyticsCard } from './ApplicationAnalyticsCard';
 
 export function DashboardPage() {
   const statistics = useQuery({ queryKey: ['application-statistics'], queryFn: applicationApi.statistics });
@@ -26,6 +27,7 @@ export function DashboardPage() {
         {(Object.keys(statusLabels) as ApplicationStatus[]).map((status) => <StatCard key={status} label={statusLabels[status]} value={statistics.data?.byStatus[status] ?? 0} color={statusColors[status]} />)}
       </SimpleGrid>
     </QueryState>
+    <ApplicationAnalyticsCard />
     <SimpleGrid cols={{ base: 1, md: 2 }} spacing="lg">
       <Card withBorder radius="lg" p="lg">
         <Group justify="space-between" mb="md"><Title order={3}>未来 7 天面试</Title><Text component={Link} to="/interviews" size="sm" c="indigo">查看全部 →</Text></Group>

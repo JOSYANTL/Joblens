@@ -24,6 +24,11 @@ export interface ApplicationStatistics {
   byStatus: Partial<Record<ApplicationStatus, number>>;
 }
 
+export interface ApplicationAnalytics {
+  weeklyApplications: { weekStart: string; count: number }[];
+  conversion: { applied: number; interviewed: number; offered: number };
+}
+
 export interface AvailableApplicationStatuses {
   currentStatus: ApplicationStatus;
   availableStatuses: ApplicationStatus[];

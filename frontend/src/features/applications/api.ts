@@ -1,10 +1,11 @@
 import { deleteResource, getJson, sendJson } from '../../shared/api/client';
-import type { ApplicationStatistics, ApplicationStatus, ApplicationStatusHistory, AvailableApplicationStatuses, JobApplication, Page } from '../../shared/api/types';
+import type { ApplicationAnalytics, ApplicationStatistics, ApplicationStatus, ApplicationStatusHistory, AvailableApplicationStatuses, JobApplication, Page } from '../../shared/api/types';
 
 export const applicationApi = {
   list: (params: { page: number; keyword?: string; status?: ApplicationStatus }) =>
     getJson<Page<JobApplication>>('/api/applications', { ...params, size: 10 }),
   statistics: () => getJson<ApplicationStatistics>('/api/applications/statistics'),
+  analytics: () => getJson<ApplicationAnalytics>('/api/applications/analytics'),
   get: (id: number) => getJson<JobApplication>(`/api/applications/${id}`),
   availableStatuses: (id: number) => getJson<AvailableApplicationStatuses>(`/api/applications/${id}/available-statuses`),
   statusHistory: (id: number) => getJson<ApplicationStatusHistory[]>(`/api/applications/${id}/status-history`),
