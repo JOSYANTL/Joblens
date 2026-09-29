@@ -5,6 +5,8 @@ import com.josyantl.joblens.identity.infrastructure.persistence.SpringDataUserAc
 import com.josyantl.joblens.identity.infrastructure.persistence.UserAccountJpaEntity;
 import com.josyantl.joblens.job.infrastructure.persistence.JobApplicationJpaEntity;
 import com.josyantl.joblens.job.infrastructure.persistence.SpringDataJobApplicationRepository;
+import com.josyantl.joblens.job.infrastructure.persistence.SpringDataJobApplicationStatusHistoryRepository;
+import com.josyantl.joblens.job.infrastructure.persistence.JobApplicationStatusHistoryJpaEntity;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,6 +20,9 @@ import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 
 import java.time.LocalDateTime;
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.DayOfWeek;
+import java.time.temporal.TemporalAdjusters;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -42,6 +47,9 @@ class JobApplicationControllerTest {
 
     @Autowired
     private SpringDataUserAccountRepository userRepository;
+
+    @Autowired
+    private SpringDataJobApplicationStatusHistoryRepository historyRepository;
 
     private Long userId;
 
@@ -346,6 +354,45 @@ class JobApplicationControllerTest {
                 .andExpect(jsonPath("$.byStatus.INTERVIEW_SCHEDULED").value(0))
                 .andExpect(jsonPath("$.byStatus.OFFERED").value(0))
                 .andExpect(jsonPath("$.byStatus.REJECTED").value(0));
+    }
+
+    @Test
+    void returnsWeeklyTrendAndHistoricalConversionForCurrentUser() throws Exception {
+        LocalDate thisWeek = LocalDate.now().with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
+        JobApplicationJpaEntity offered = saveJobApplication("Offer Co", "Engineer", ApplicationStatus.OFFERED);
+        JobApplicationJpaEntity rejected = saveJobApplication("Rejected Co", "Engineer", ApplicationStatus.REJECTED);
+        JobApplicationJpaEntity saved = saveJobApplication("Saved Co", "Engineer", ApplicationStatus.SAVED);
+        rejected.setCreatedAt(thisWeek.minusWeeks(1).atTime(12, 0));
+        springDataRepository.saveAndFlush(rejected);
+        saved.setCreatedAt(thisWeek.minusWeeks(12).atTime(12, 0));
+        springDataRepository.saveAndFlush(saved);
+        JobApplicationStatusHistoryJpaEntity interviewHistory = new JobApplicationStatusHistoryJpaEntity();
+        interviewHistory.setJobApplicationId(rejected.getId());
+        interviewHistory.setFromStatus(ApplicationStatus.APPLIED);
+        interviewHistory.setToStatus(ApplicationStatus.INTERVIEW_SCHEDULED);
+        interviewHistory.setChangedAt(LocalDateTime.now());
+        historyRepository.saveAndFlush(interviewHistory);
+
+        UserAccountJpaEntity other = new UserAccountJpaEntity();
+        other.setEmail("analytics-other@example.com");
+        other.setPasswordHash("{noop}test-password");
+        other.setDisplayName("Other User");
+        other.setEnabled(true);
+        other.setCreatedAt(Instant.now());
+        Long otherId = userRepository.saveAndFlush(other).getId();
+        JobApplicationJpaEntity privateApplication = saveJobApplication("Private Co", "Engineer", ApplicationStatus.OFFERED);
+        privateApplication.setUserId(otherId);
+        springDataRepository.saveAndFlush(privateApplication);
+
+        mockMvc.perform(get("/api/applications/analytics"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.weeklyApplications.length()").value(12))
+                .andExpect(jsonPath("$.weeklyApplications[10].weekStart").value(thisWeek.minusWeeks(1).toString()))
+                .andExpect(jsonPath("$.weeklyApplications[10].count").value(1))
+                .andExpect(jsonPath("$.weeklyApplications[11].count").value(1))
+                .andExpect(jsonPath("$.conversion.applied").value(2))
+                .andExpect(jsonPath("$.conversion.interviewed").value(2))
+                .andExpect(jsonPath("$.conversion.offered").value(1));
     }
 
     @Test

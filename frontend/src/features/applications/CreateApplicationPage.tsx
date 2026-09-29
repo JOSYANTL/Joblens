@@ -13,6 +13,7 @@ export function CreateApplicationPage() {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ['applications'] }),
         queryClient.invalidateQueries({ queryKey: ['application-statistics'] }),
+        queryClient.invalidateQueries({ queryKey: ['application-analytics'] }),
       ]);
       navigate(`/applications/${application.id}`);
     },

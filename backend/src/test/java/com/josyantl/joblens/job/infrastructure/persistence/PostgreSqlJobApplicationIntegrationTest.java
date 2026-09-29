@@ -15,6 +15,7 @@ import com.josyantl.joblens.job.domain.repository.FollowUpTaskRepository;
 import com.josyantl.joblens.job.domain.repository.FollowUpTaskQuery;
 import com.josyantl.joblens.job.domain.repository.JobApplicationPage;
 import com.josyantl.joblens.job.domain.repository.JobApplicationRepository;
+import com.josyantl.joblens.job.domain.repository.JobApplicationAnalyticsRepository;
 import com.josyantl.joblens.job.domain.repository.JobApplicationSearchCriteria;
 import com.josyantl.joblens.job.domain.repository.JobApplicationSortField;
 import com.josyantl.joblens.job.domain.repository.SortDirection;
@@ -35,6 +36,8 @@ import org.testcontainers.utility.DockerImageName;
 import java.util.Map;
 import java.time.Instant;
 import java.time.OffsetDateTime;
+import java.time.LocalDateTime;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -57,6 +60,9 @@ class PostgreSqlJobApplicationIntegrationTest {
 
     @Autowired
     private JobApplicationRepository repository;
+
+    @Autowired
+    private JobApplicationAnalyticsRepository analyticsRepository;
 
     @Autowired
     private SpringDataJobApplicationRepository springDataRepository;
@@ -194,9 +200,17 @@ class PostgreSqlJobApplicationIntegrationTest {
                         + "AND column_name = 'version'",
                 Integer.class
         );
+        Integer recentActivityIndexCount = jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM pg_indexes "
+                        + "WHERE schemaname = 'public' "
+                        + "AND tablename = 'application_activity_events' "
+                        + "AND indexname = 'idx_application_activity_events_user_recent'",
+                Integer.class
+        );
 
-        assertThat(latestVersion).isEqualTo("10");
+        assertThat(latestVersion).isEqualTo("11");
         assertThat(versionColumnCount).isEqualTo(1);
+        assertThat(recentActivityIndexCount).isEqualTo(1);
     }
 
     @Test
@@ -261,5 +275,31 @@ class PostgreSqlJobApplicationIntegrationTest {
                 .containsExactly("Acme");
         assertThat(counts.get(ApplicationStatus.SAVED)).isEqualTo(1L);
         assertThat(counts.get(ApplicationStatus.APPLIED)).isEqualTo(1L);
+    }
+
+    @Test
+    void analyticsQueriesUsePostgresAndHistoricalStages() {
+        JobApplication first = repository.save(JobApplication.create("Acme", "Engineer", "Java"), USER_ID);
+        repository.save(JobApplication.create("Example", "Designer", "Figma"), USER_ID);
+        first.changeStatus(ApplicationStatus.APPLIED);
+        first.changeStatus(ApplicationStatus.INTERVIEW_SCHEDULED);
+        first.changeStatus(ApplicationStatus.REJECTED);
+        repository.save(first, USER_ID);
+
+        JobApplicationStatusHistoryJpaEntity history = new JobApplicationStatusHistoryJpaEntity();
+        history.setJobApplicationId(first.getId());
+        history.setFromStatus(ApplicationStatus.APPLIED);
+        history.setToStatus(ApplicationStatus.INTERVIEW_SCHEDULED);
+        history.setChangedAt(LocalDateTime.now());
+        historyRepository.saveAndFlush(history);
+
+        assertThat(analyticsRepository.findCreationDates(USER_ID,
+                LocalDateTime.now().minusDays(1), LocalDateTime.now().plusDays(1)))
+                .hasSize(2);
+        assertThat(analyticsRepository.countReachedStage(USER_ID,
+                List.of(ApplicationStatus.INTERVIEW_SCHEDULED, ApplicationStatus.OFFERED),
+                ApplicationStatus.INTERVIEW_SCHEDULED)).isEqualTo(1);
+        assertThat(analyticsRepository.countReachedStage(USER_ID,
+                List.of(ApplicationStatus.OFFERED), ApplicationStatus.OFFERED)).isZero();
     }
 }

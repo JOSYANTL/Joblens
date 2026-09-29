@@ -38,6 +38,10 @@ public class ApplicationActivityService implements ApplicationActivityRecorder {
         return notes.findAll(userId, applicationId);
     }
 
+    public List<ApplicationActivity> findRecentActivities(int size) {
+        return activities.findRecent(currentUser.userId(), size);
+    }
+
     @Transactional
     public ApplicationNote createNote(Long applicationId, String content) {
         Long userId = currentUser.userId();

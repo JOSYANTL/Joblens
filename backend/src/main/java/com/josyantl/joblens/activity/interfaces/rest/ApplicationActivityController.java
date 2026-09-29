@@ -1,7 +1,6 @@
 package com.josyantl.joblens.activity.interfaces.rest;
 
 import com.josyantl.joblens.activity.application.ApplicationActivityService;
-import com.josyantl.joblens.activity.domain.model.ApplicationActivity;
 import com.josyantl.joblens.activity.domain.model.ApplicationNote;
 import com.josyantl.joblens.shared.application.ApplicationActivityType;
 import jakarta.validation.Valid;
@@ -20,15 +19,7 @@ import java.util.List;
 public class ApplicationActivityController {
     private final ApplicationActivityService service;
 
-    public record ActivityResponse(Long id, String type, String subjectType, Long subjectId,
-            String summary, Instant occurredAt) {
-        static ActivityResponse from(ApplicationActivity value) {
-            return new ActivityResponse(value.getId(), value.getType().name(),
-                    value.getSubjectType().name(), value.getSubjectId(), value.getSummary(),
-                    value.getOccurredAt());
-        }
-    }
-    public record ActivityPageResponse(List<ActivityResponse> content, int page, int size,
+    public record ActivityPageResponse(List<ApplicationActivityResponse> content, int page, int size,
                                        long totalElements, int totalPages) {}
     public record NoteRequest(@NotBlank @Size(max = 5000) String content) {}
     public record UpdateNoteRequest(@NotBlank @Size(max = 5000) String content,
@@ -47,7 +38,7 @@ public class ApplicationActivityController {
             @RequestParam(defaultValue = "0") @Min(0) int page,
             @RequestParam(defaultValue = "20") @Min(1) @Max(100) int size) {
         var result = service.findActivities(applicationId, type, page, size);
-        return new ActivityPageResponse(result.content().stream().map(ActivityResponse::from).toList(),
+        return new ActivityPageResponse(result.content().stream().map(ApplicationActivityResponse::from).toList(),
                 result.page(), result.size(), result.totalElements(), result.totalPages());
     }
 

@@ -86,6 +86,42 @@ class ApplicationActivityControllerTest {
     }
 
     @Test
+    void returnsAUserScopedRecentActivityFeed() throws Exception {
+        tasks.create(applicationId, "Send thank-you email", "", Instant.parse("2030-01-01T00:00:00Z"));
+        mvc.perform(post("/api/applications/{id}/notes", applicationId)
+                        .with(user("activity@example.com")).with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"content\":\"Important\"}"))
+                .andExpect(status().isCreated());
+
+        mvc.perform(post("/api/applications").with(user("other@example.com")).with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "company": "Private Company",
+                                  "position": "Private Role",
+                                  "description": "Must not appear in another user's feed"
+                                }
+                                """))
+                .andExpect(status().isCreated());
+
+        mvc.perform(get("/api/activities/recent")
+                        .with(user("activity@example.com"))
+                        .param("size", "2"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(2))
+                .andExpect(jsonPath("$[0].applicationId").value(applicationId))
+                .andExpect(jsonPath("$[0].type").value("NOTE_CREATED"))
+                .andExpect(jsonPath("$[1].applicationId").value(applicationId))
+                .andExpect(jsonPath("$[1].type").value("TASK_CREATED"));
+
+        mvc.perform(get("/api/activities/recent")
+                        .with(user("activity@example.com"))
+                        .param("size", "0"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
     void validatesInputAndKeepsOtherUsersDataPrivate() throws Exception {
         mvc.perform(post("/api/applications/{id}/notes", applicationId).with(user("activity@example.com")).with(csrf())
                         .contentType(MediaType.APPLICATION_JSON).content("{\"content\":\" \"}"))

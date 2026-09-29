@@ -5,16 +5,9 @@ import type { ApplicationActivityType } from '../../shared/api/types';
 import { QueryState } from '../../shared/components/QueryState';
 import { formatDate } from '../../shared/format';
 import { activityApi } from './api';
+import { activityTypeLabels } from './labels';
 
-const labels: Record<ApplicationActivityType, string> = {
-  APPLICATION_CREATED: '创建申请', APPLICATION_UPDATED: '更新申请', APPLICATION_STATUS_CHANGED: '更新申请状态',
-  INTERVIEW_SCHEDULED: '预约面试', INTERVIEW_RESCHEDULED: '调整面试', INTERVIEW_STATUS_CHANGED: '更新面试状态',
-  INTERVIEW_FEEDBACK_UPDATED: '更新面试反馈', TASK_CREATED: '创建任务', TASK_UPDATED: '更新任务',
-  TASK_STATUS_CHANGED: '更新任务状态', TASK_DELETED: '删除任务', DOCUMENT_UPLOADED: '上传文档',
-  DOCUMENT_DELETED: '删除文档', NOTE_CREATED: '添加备注', NOTE_UPDATED: '更新备注', NOTE_DELETED: '删除备注',
-};
-
-const filterOptions = Object.entries(labels).map(([value, label]) => ({ value, label }));
+const filterOptions = Object.entries(activityTypeLabels).map(([value, label]) => ({ value, label }));
 
 export function ApplicationActivityCard({ applicationId, enabled }: { applicationId: number; enabled: boolean }) {
   const [page, setPage] = useState(1);
@@ -34,7 +27,7 @@ export function ApplicationActivityCard({ applicationId, enabled }: { applicatio
       empty={activities.data?.content.length === 0} emptyText="没有符合条件的活动。">
       <Stack gap="sm">{activities.data?.content.map((item) => <Group key={item.id} justify="space-between"
         align="start" className="list-row">
-        <div><Badge variant="light">{labels[item.type]}</Badge><Text mt="xs">{item.summary}</Text></div>
+        <div><Badge variant="light">{activityTypeLabels[item.type]}</Badge><Text mt="xs">{item.summary}</Text></div>
         <Text size="xs" c="dimmed">{formatDate(item.occurredAt)}</Text>
       </Group>)}</Stack>
     </QueryState>

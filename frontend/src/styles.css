@@ -4,3 +4,4 @@ body { background: #f7f8fc; }
 .brand-mark { width: 32px; height: 32px; display: grid; place-items: center; border-radius: 9px; background: #4c6ef5; color: #fff; font-weight: 800; }
 .list-row { padding: 12px 0; border-bottom: 1px solid #eef0f4; }
 .list-row:last-child { border-bottom: 0; }
+.activity-dot { width: 10px; height: 10px; flex: 0 0 10px; border-radius: 50%; background: #4c6ef5; box-shadow: 0 0 0 4px #edf2ff; }
